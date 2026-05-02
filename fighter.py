@@ -25,8 +25,8 @@ class Fighter():
         self.alive = True
         self.block = False
         self.victory = False
-        self.SPEED = 20 #trial and error walking speed
-        self.dx = 0
+        self.knockback_distance = 0
+        self.knockback_cooldown = 0 # recovery frames i guess
 
 #animation
     def load_images(self, sprite_sheet, animation_steps):
@@ -52,7 +52,10 @@ class Fighter():
         key = pygame.key.get_pressed()
         ki = pygame.KEYDOWN
 
-
+        if self.knockback_cooldown > 0:
+            # 1 second knockback
+            self.knockback_cooldown -= 1
+            self.dx = -self.knockback_distance 
         #can only move when not attacking
         if self.attacking == False and self.alive == True and round_over == False:
             if self.player == 1:   
@@ -143,6 +146,20 @@ class Fighter():
         #update player position
         self.rect.x += self.dx
 
+    def applyKnockback(self, target, attack_type):
+        self.knockback_distance = 0
+        self.knockback_cooldown = 5
+        # Knockback logic
+        if attack_type == 1: # Standing Light
+            self.knockback_distance = 10
+        elif attack_type == 2: # Standing Heavy
+            self.knockback_distance = 12
+        elif attack_type == 3: # Crouching Light
+            self.knockback_distance = 10 
+        elif attack_type == 4: # Crouching Heavy
+            self.knockback_distance = 12
+        
+
     #handle animation update
     def update(self, target):
         #check what action player performed
@@ -217,6 +234,7 @@ class Fighter():
             elif attacking_rect.colliderect(target.rect):
                 target.health -= 10
                 target.hit = True
+                target.applyKnockback(target, 1)
                 
             pygame.draw.rect(surface, (0, 255, 0), attacking_rect)
             
@@ -230,6 +248,7 @@ class Fighter():
             elif attacking_rect.colliderect(target.rect):
                 target.health -= 20
                 target.hit = True
+                target.applyKnockback(target, 2)
             pygame.draw.rect(surface, (0, 255, 0), attacking_rect)
 
     def c_L_attack(self, surface, target):
@@ -241,6 +260,7 @@ class Fighter():
             elif attacking_rect.colliderect(target.rect):
                 target.health -= 10
                 target.hit = True
+                target.applyKnockback(target, 3)
             pygame.draw.rect(surface, (0, 255, 0), attacking_rect)     
 
     def c_H_attack(self, surface, target):
@@ -252,6 +272,7 @@ class Fighter():
             elif attacking_rect.colliderect(target.rect):
                 target.health -= 10
                 target.hit = True
+                target.applyKnockback(target, 4)
             pygame.draw.rect(surface, (0, 255, 0), attacking_rect)   
 
         
