@@ -1,0 +1,46 @@
+idle:		 					56 x 52 / 19f
+walk: 		 					51 x 57 / 10f
+walk back: 		 				51 x 57 / 10f
+Standing light:  					72 x 67 / 8f
+Standing heavy:  					84 x 69 / 21f
+Crouch idle (shift y down by 1px):	 		38 x 50 / 4f
+Crouching light (shift y down by 1px, 3px @ 4th): 	63 x 41 / 6f
+Crouching heavy: 					89 x 59 / 13f
+Damaged:						68 x 53 / 1f
+Victory:						69 x 81 / 27f
+Defeat:							38 x 64 / 7f
+
+
+potential hurtbox: 					31 x 52
+
+
+60 frames per second
+1 frame is 1/60 second
+
+60 = frames = 1 second = 1000ms
+
+4 frames = 4/60 second = 2/30s = .06667 s = 66.67 ms
+
+
+to fix:
+timing for each moves (just edit the spritesheet)
+pushback
+attack vfx
+
+block system
+block vfx
+
+stop moving and attacking while getting hurt
+
+collision system
+
+player 2 controls
+
+better text/image assets (playername + score, round start, countdown)
+
+to adjust later:
+damage for each moves
+hitbox for each moves
+round loop 
+menu system
+sound system
