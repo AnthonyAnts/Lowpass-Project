@@ -109,13 +109,12 @@ class Fighter():
             if self.player == 2:   
             #movement
                 if key[pygame.K_LEFT]:
-                    self.dx = -self.SPEED + 10 #walking back speed
+                    self.dx = -self.SPEED
+                    self.walking = True
+                if key[pygame.K_RIGHT]:
+                    self.dx = self.SPEED - 10 #walking back speed
                     self.walking_back = True
                     self.block = True
-                if key[pygame.K_RIGHT]:
-                    self.dx = self.SPEED
-                    self.walking = True
-                
                 if key[pygame.K_DOWN]:
                     self.dx = 0
                     self.crouching = True
