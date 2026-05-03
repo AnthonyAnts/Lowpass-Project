@@ -55,7 +55,7 @@ class Fighter():
         if self.knockback_cooldown > 0:
             # 1 second knockback
             self.knockback_cooldown -= 1
-            self.dx = -self.knockback_distance 
+            self.dx = self.knockback_distance 
 
         #can only move when not attacking
         if self.attacking == False and self.alive == True and round_over == False:
@@ -78,7 +78,7 @@ class Fighter():
                     self.c_L_attack(surface, target)
                     self.attack_type = 3
                 #c.H        
-                if key[pygame.K_k] and key[pygame.K_s]:
+                elif key[pygame.K_k] and key[pygame.K_s]:
                     self.c_H_attack(surface, target)
                     self.attack_type = 4
                 #s.L
@@ -111,7 +111,7 @@ class Fighter():
                     self.c_L_attack(surface, target)
                     self.attack_type = 3
                 #c.H        
-                if key[pygame.K_KP_3] and key[pygame.K_DOWN]:
+                elif key[pygame.K_KP_3] and key[pygame.K_DOWN]:
                     self.c_H_attack(surface, target)
                     self.attack_type = 4
                 #s.L
@@ -148,19 +148,37 @@ class Fighter():
         #update player position
         self.rect.x += self.dx
 
-    def applyKnockback(self, target, attack_type):
+    def apply_knockback(self, attacker, attack_type):
         self.knockback_distance = 0
         self.knockback_cooldown = 5
         # Knockback logic
         if attack_type == 1: # Standing Light
-            self.knockback_distance = 10
+            if self.rect.centerx > attacker.rect.centerx:
+                direction = 1
+            else:
+                direction = -1
+            self.knockback_distance = direction * 10
         elif attack_type == 2: # Standing Heavy
-            self.knockback_distance = 12
+            if self.rect.centerx > attacker.rect.centerx:
+                direction = 1
+            else:
+                direction = -1
+            self.knockback_distance = direction * 12
         elif attack_type == 3: # Crouching Light
-            self.knockback_distance = 10 
+            if self.rect.centerx > attacker.rect.centerx:
+                direction = 1
+            else:
+                direction = -1
+            self.knockback_distance = direction * 10 
         elif attack_type == 4: # Crouching Heavy
-            self.knockback_distance = 12
+            if self.rect.centerx > attacker.rect.centerx:
+                direction = 1
+            else:
+                direction = -1
+            self.knockback_distance = direction * 12
+
         
+
 
     #handle animation update
     def update(self, target):
@@ -236,7 +254,7 @@ class Fighter():
             elif attacking_rect.colliderect(target.rect):
                 target.health -= 10
                 target.hit = True
-                target.applyKnockback(target, 1)
+                target.apply_knockback(self, 1)
                 
             pygame.draw.rect(surface, (0, 255, 0), attacking_rect)
             
@@ -250,7 +268,7 @@ class Fighter():
             elif attacking_rect.colliderect(target.rect):
                 target.health -= 20
                 target.hit = True
-                target.applyKnockback(target, 2)
+                target.apply_knockback(self, 2)
             pygame.draw.rect(surface, (0, 255, 0), attacking_rect)
 
     def c_L_attack(self, surface, target):
@@ -262,7 +280,7 @@ class Fighter():
             elif attacking_rect.colliderect(target.rect):
                 target.health -= 10
                 target.hit = True
-                target.applyKnockback(target, 3)
+                target.apply_knockback(self, 3)
             pygame.draw.rect(surface, (0, 255, 0), attacking_rect)     
 
     def c_H_attack(self, surface, target):
@@ -274,7 +292,7 @@ class Fighter():
             elif attacking_rect.colliderect(target.rect):
                 target.health -= 10
                 target.hit = True
-                target.applyKnockback(target, 4)
+                target.apply_knockback(self, 4)
             pygame.draw.rect(surface, (0, 255, 0), attacking_rect)   
 
         
