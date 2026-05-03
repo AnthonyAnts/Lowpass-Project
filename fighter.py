@@ -56,6 +56,7 @@ class Fighter():
             # 1 second knockback
             self.knockback_cooldown -= 1
             self.dx = -self.knockback_distance 
+
         #can only move when not attacking
         if self.attacking == False and self.alive == True and round_over == False:
             if self.player == 1:   
@@ -129,10 +130,11 @@ class Fighter():
         if self.rect.right + self.dx > screen_width:
             self.dx = screen_width - self.rect.right
         
-        #collision management for player 1 and player 2 (flipped)
+        # collision 
+        player_border = self.rect.move(self.dx, 0)
+        if player_border.colliderect(target.rect):
+            self.dx = 0
         
-        
-
         #flip to face each other (for player 2 flip)
         if target.rect.centerx > self.rect.centerx:
             self.flip = False
