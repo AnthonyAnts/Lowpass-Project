@@ -311,7 +311,7 @@ class Fighter():
     def s_H_attack(self, surface, target):
         if self.attack_cooldown == 0:
             self.attacking = True
-            attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 2.5 * self.rect.width, self.rect.height)
+            attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 2 * self.rect.width, self.rect.height)
             if attacking_rect.colliderect(target.rect) and target.block == True and target.crouching == False:
                 target.apply_knockback_on_block(self, 2)
                 target.stun_on_block(15)
@@ -339,7 +339,7 @@ class Fighter():
     def c_H_attack(self, surface, target):
         if self.attack_cooldown == 0:
             self.attacking = True
-            attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 2.3 * self.rect.width, self.rect.height/2) 
+            attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 1.9 * self.rect.width, self.rect.height/2) 
             if attacking_rect.colliderect(target.rect) and target.block == True and target.crouching == True:
                 target.apply_knockback_on_block(self, 4)
                 target.stun_on_block(15)
