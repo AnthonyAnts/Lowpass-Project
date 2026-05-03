@@ -37,7 +37,7 @@ player2_data = [player2_size, player2_scale, player2_offset]
 #load spritesheet
 player1_sheet = pygame.image.load("assets/sprites/sora sprite sheet.png")
 
-player1_animation_steps = [19, 8, 10, 8, 21, 10, 6, 13, 9, 27, 7]
+player1_animation_steps = [19, 8, 10, 8, 21, 10, 8, 13, 9, 27, 7]
 player2_animation_steps = player1_animation_steps
 
 text = pygame.font.SysFont("Wide Latin", 31) #text font and size
