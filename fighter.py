@@ -8,7 +8,14 @@ class Fighter():
         self.image_scale = data[1]
         self.offset = data[2]
         self.flip = flip
+        self.animation_steps = animation_steps
         self.animation_list = self.load_images(sprite_sheet, animation_steps)
+        self.attack_profiles = {
+            1: self.animation_steps["standing_light"],
+            2: self.animation_steps["standing_heavy"],
+            3: self.animation_steps["crouching_light"],
+            4: self.animation_steps["crouching_heavy"],
+        }
         self.action = 0 #0:idle 1:running 2: walking back 3:s.L 4:s.H 5:crouching 6:c.L 7:c.H 8:Hurt 9:Victory 10:Defeat
         self.frame_index = 0
         self.image = self.animation_list[self.action][self.frame_index]
@@ -19,8 +26,9 @@ class Fighter():
         self.crouching = False
         self.attacking = False
         self.attack_type = 0
-        self.attack_cooldown = 0 #this is where frame data comes in
+        self.attack_cooldown = 0
         self.hit = False 
+        self.hit_confirm = False
         self.health = 100
         self.alive = True
         self.block = False
@@ -29,13 +37,22 @@ class Fighter():
         self.knockback_cooldown = 0 # recovery frames i guess
         self.knockback_dx = 0
         self.stun_timer = 0
+        self.attack_state = None
+        self.attack_timer = 0
+        self.attack_startup_frames = 0
+        self.attack_active_frames = 0
+        self.attack_data = {}
+        self.attack_recovery = 0
+        self.prev_key = pygame.key.get_pressed() 
+        self.attack_landed = False # Prevents one attack from hitting multiple times
 
 #animation
     def load_images(self, sprite_sheet, animation_steps):
         animation_list = []
-        for y, animation in enumerate(animation_steps):
-            temp_img_list = []    
-            for x in range(animation):
+        for y, animation in enumerate(animation_steps.values()):
+            temp_img_list = []
+            total_frames = animation["frames"]    
+            for x in range(total_frames):
                 temp_img = sprite_sheet.subsurface(x * self.size, y * self.size , self.size, self.size)
                 temp_img_list.append(pygame.transform.scale(temp_img, (self.size * self.image_scale, self.size * self.image_scale)))
             animation_list.append(temp_img_list)
@@ -43,41 +60,32 @@ class Fighter():
 
 #movement
     def move(self, screen_width, surface, target, round_over):
-        self.SPEED = 20 #trial and error walking speed
+        self.SPEED = 20
         self.dx = 0    
         self.walking = False
         self.walking_back = False
         self.crouching = False
         self.block = False
-        self.attack_type = 0
-    
-        key = pygame.key.get_pressed()
-        ki = pygame.KEYDOWN
 
+        key = pygame.key.get_pressed()
+
+        # knockback
         if self.knockback_cooldown > 0:
-            # 1 second knockback
             self.knockback_cooldown -= 1
             self.rect.x += self.knockback_distance
 
-        # player should not be able to do anything after getting hit
-        # dunno if this works (shrug)
-        if self.stun_on_block:
-            if self.stun_timer > 0:
-                self.stun_timer -= 1
-                self.block = True
-                return
-    
-        elif self.stun_on_hit:
-            if self.stun_timer > 0:
-                self.stun_timer -= 1
-                return
-        
-        #can only move when not attacking
-        if self.attacking == False and self.alive == True and round_over == False:
-            if self.player == 1:   
-            #movement
+        # stun handling
+        if self.stun_timer > 0:
+            self.stun_timer -= 1
+            self.prev_key = key
+            return
+
+        # movement + input
+        if not self.attacking and self.alive and not round_over:
+            if self.player == 1:
+                #movement
                 if key[pygame.K_a]:
-                    self.dx = -self.SPEED + 10 #walking back speed
+                    self.dx = -self.SPEED + 10
                     self.walking_back = True
                     self.block = True
                 if key[pygame.K_d]:
@@ -86,28 +94,22 @@ class Fighter():
                 if key[pygame.K_s]:
                     self.dx = 0
                     self.crouching = True
-               
-                #attack
-                #c.L
-                if key[pygame.K_j] and key[pygame.K_s]:
-                    self.c_L_attack(surface, target)
-                    self.attack_type = 3
-                #c.H        
-                elif key[pygame.K_k] and key[pygame.K_s]:
-                    self.c_H_attack(surface, target)
-                    self.attack_type = 4
-                #s.L
-                elif key[pygame.K_j]:
-                    self.s_L_attack(surface, target)
-                    self.attack_type = 1
-                #s.H         
-                elif key[pygame.K_k]:
-                    self.s_H_attack(surface, target)
-                    self.attack_type = 2
 
-            #check player 2 control
+                # attacks
+                is_crouching = key[pygame.K_s]
+                key_j_just_pressed = key[pygame.K_j] and not self.prev_key[pygame.K_j]
+                key_k_just_pressed = key[pygame.K_k] and not self.prev_key[pygame.K_k]
+                if key_j_just_pressed and is_crouching:
+                    self.start_attack(3) #c.L
+                elif key_k_just_pressed and is_crouching:
+                    self.start_attack(4) #c.H   
+                elif key_j_just_pressed:
+                    self.start_attack(1) #s.L   
+                elif key_k_just_pressed:
+                    self.start_attack(2) #s.H   
+
             if self.player == 2:   
-            #movement
+                #movement
                 if key[pygame.K_LEFT]:
                     self.dx = -self.SPEED
                     self.walking = True
@@ -121,104 +123,46 @@ class Fighter():
                
                 #attack
                 #c.L
-                if key[pygame.K_KP_2] and key[pygame.K_DOWN]:
-                    self.c_L_attack(surface, target)
-                    self.attack_type = 3
+                is_crouching2 = key[pygame.K_DOWN]
+                key_2_just_pressed = key[pygame.K_KP_2] and not self.prev_key[pygame.K_KP_2]
+                key_3_just_pressed = key[pygame.K_KP_3] and not self.prev_key[pygame.K_KP_3]
+                if key_2_just_pressed and is_crouching2:
+                    self.start_attack(3)
                 #c.H        
-                elif key[pygame.K_KP_3] and key[pygame.K_DOWN]:
-                    self.c_H_attack(surface, target)
-                    self.attack_type = 4
+                elif key_3_just_pressed and is_crouching2:
+                    self.start_attack(4)
                 #s.L
-                elif key[pygame.K_KP_2]:
-                    self.s_L_attack(surface, target)
-                    self.attack_type = 1
+                elif key_2_just_pressed:
+                    self.start_attack(1)
                 #s.H         
-                elif key[pygame.K_KP_3]:
-                    self.s_H_attack(surface, target)
-                    self.attack_type = 2
+                elif key_3_just_pressed:
+                    self.start_attack(2)
 
-
-        #wall limit
+        # wall limit
         if self.rect.left + self.dx < 0:
             self.dx = -self.rect.left
         if self.rect.right + self.dx > screen_width:
             self.dx = screen_width - self.rect.right
-        
-        # collision 
-        player_border = self.rect.move(self.dx, 0)
-        if player_border.colliderect(target.rect):
-            self.dx = 0
-        
-        #flip to face each other (for player 2 flip)
-        if target.rect.centerx > self.rect.centerx:
-            self.flip = False
-        else:
-            self.flip = True
 
-        #apply attack cooldown
+        # collision
+        if self.rect.move(self.dx, 0).colliderect(target.rect):
+            self.dx = 0
+
+        # face opponent
+        self.flip = target.rect.centerx < self.rect.centerx
+
         if self.attack_cooldown > 0:
             self.attack_cooldown -= 1
 
-        #update player position
+        self.attack(target, surface)
+
+        # apply movement
         self.rect.x += self.dx
 
-    def apply_knockback_on_block(self, attacker, attack_type):
-        self.knockback_distance = 0
+    def apply_knockback(self, amount, flip):
+        direction = 1 if flip else 1
+        self.knockback_distance = direction * amount
         self.knockback_cooldown = 5
-        # Knockback logic
-        if attack_type == 1: # Standing Light
-            if self.rect.centerx > attacker.rect.centerx:
-                direction = 1
-            else:
-                direction = -1
-            self.knockback_distance = direction * 5
-        elif attack_type == 2: # Standing Heavy
-            if self.rect.centerx > attacker.rect.centerx:
-                direction = 1
-            else:
-                direction = -1
-            self.knockback_distance = direction * 7
-        elif attack_type == 3: # Crouching Light
-            if self.rect.centerx > attacker.rect.centerx:
-                direction = 1
-            else:
-                direction = -1
-            self.knockback_distance = direction * 5 
-        elif attack_type == 4: # Crouching Heavy
-            if self.rect.centerx > attacker.rect.centerx:
-                direction = 1
-            else:
-                direction = -1
-            self.knockback_distance = direction * 7
-
-    def apply_knockback_on_hit(self, attacker, attack_type):
-        self.knockback_distance = 0
-        self.knockback_cooldown = 5
-        # Knockback logic
-        if attack_type == 1: # Standing Light
-            if self.rect.centerx > attacker.rect.centerx:
-                direction = 1
-            else:
-                direction = -1
-            self.knockback_distance = direction * 10
-        elif attack_type == 2: # Standing Heavy
-            if self.rect.centerx > attacker.rect.centerx:
-                direction = 1
-            else:
-                direction = -1
-            self.knockback_distance = direction * 12
-        elif attack_type == 3: # Crouching Light
-            if self.rect.centerx > attacker.rect.centerx:
-                direction = 1
-            else:
-                direction = -1
-            self.knockback_distance = direction * 10 
-        elif attack_type == 4: # Crouching Heavy
-            if self.rect.centerx > attacker.rect.centerx:
-                direction = 1
-            else:
-                direction = -1
-            self.knockback_distance = direction * 12
 
     def stun_on_hit(self,duration):
         self.stun_timer = duration
@@ -291,66 +235,87 @@ class Fighter():
                     self.attacking = False
                     self.attack_cooldown = 10 #need to adjust for frame data
 
-    def s_L_attack(self, surface, target):
-        if self.attack_cooldown == 0:
-            self.attacking = True
-            attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 1.7 * self.rect.width, self.rect.height)  
-            #if attack is blocked
-            if attacking_rect.colliderect(target.rect) and target.block == True:
-                target.apply_knockback_on_block(self, 1)
-                target.stun_on_block(15)
-            elif attacking_rect.colliderect(target.rect):
-                target.health -= 10
-                target.hit = True
-                target.apply_knockback_on_hit(self, 1)
-                target.stun_on_hit(25)
-                
-            pygame.draw.rect(surface, (0, 255, 0), attacking_rect)
-            
-    
-    def s_H_attack(self, surface, target):
-        if self.attack_cooldown == 0:
-            self.attacking = True
-            attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 2.5 * self.rect.width, self.rect.height)
-            if attacking_rect.colliderect(target.rect) and target.block == True and target.crouching == False:
-                target.apply_knockback_on_block(self, 2)
-                target.stun_on_block(15)
-            elif attacking_rect.colliderect(target.rect):
-                target.health -= 20
-                target.hit = True
-                target.apply_knockback_on_hit(self, 2)
-                target.stun_on_hit(25)
-            pygame.draw.rect(surface, (0, 255, 0), attacking_rect)
+    def attack(self, target, surface):
+        if not self.attacking:
+            return
 
-    def c_L_attack(self, surface, target):
-        if self.attack_cooldown == 0:
-            self.attacking = True
-            attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 1.7 * self.rect.width, self.rect.height)  
-            if attacking_rect.colliderect(target.rect) and target.block == True and target.crouching == True:
-                target.apply_knockback_on_block(self, 3)
-                target.stun_on_block(15)
-            elif attacking_rect.colliderect(target.rect):
-                target.health -= 10
-                target.hit = True
-                target.apply_knockback_on_hit(self, 3)
-                target.stun_on_hit(25)
-            pygame.draw.rect(surface, (0, 255, 0), attacking_rect)     
+        self.attack_timer += 1
 
-    def c_H_attack(self, surface, target):
-        if self.attack_cooldown == 0:
-            self.attacking = True
-            attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 2.3 * self.rect.width, self.rect.height/2) 
-            if attacking_rect.colliderect(target.rect) and target.block == True and target.crouching == True:
-                target.apply_knockback_on_block(self, 4)
-                target.stun_on_block(15)
-            elif attacking_rect.colliderect(target.rect):
-                target.health -= 10
-                target.hit = True
-                target.apply_knockback_on_hit(self, 4)
-                target.stun_on_hit(25)
-            pygame.draw.rect(surface, (0, 255, 0), attacking_rect)   
+        startup = self.attack_data["startup"]
+        active = self.attack_data["active"]
+        recovery = self.attack_data["recovery"]
 
+        hitbox = self.attack_data.get("hitbox")
+
+        # startup
+        if self.attack_timer <= startup:
+            self.attack_state = "startup"
+            return
         
+        #active
+        elif self.attack_timer <= startup + active:
+            self.attack_state = "active"
+
+            if not hitbox or self.hit_confirm:
+                return
+
+            width = self.rect.width * hitbox["width_multiplier"]
+            height = self.rect.height * hitbox["height_multiplier"]
+
+            # radical wizardry for direction flipping
+            # direction: right = 1, left = -1
+            if not self.flip:
+                direction = 1
+            else:
+                direction = -1
+
+            offset = self.rect.width * 0.5 * direction
+            x = self.rect.centerx + offset
+            if self.flip:
+                x = x - width
+
+            attacking_rect = pygame.Rect(x, self.rect.y, width, height)
+            #debug
+            pygame.draw.rect(surface, (0, 255, 0), attacking_rect)
+
+            # collision
+            if attacking_rect.colliderect(target.rect):
+                self.hit_confirm = True 
+
+                attack = self.attack_data
+                if target.block:
+                    block = attack["on_block"]
+                    target.apply_knockback(block["knockback"], self.flip)
+                    target.stun_on_block(block["stun"])
+                else:
+                    hit = attack["on_hit"]
+                    target.health -= hit["damage"]
+                    target.apply_knockback(hit["knockback"], self.flip)
+                    target.stun_on_hit(hit["stun"])
+        #recovery
+        elif self.attack_timer <= startup + active + recovery:
+            self.attack_state = "recovery"
+
+        #reset
+        else:
+            self.attacking = False
+            self.attack_timer = 0
+            self.attack_state = None
+            self.attack_cooldown = self.attack_data["recovery"]
+
+    def start_attack(self, attack_type):
+        if self.attacking:
+            return
+
+        if self.attack_cooldown > 0:
+            return
+
+        self.attacking = True
+        self.attack_type = attack_type
+        self.attack_timer = 0
+        self.attack_data = self.attack_profiles[attack_type]
+        self.hit_confirm = False 
+
     def update_action(self, new_action):
         #check if new action is different to the prev one
         if new_action != self.action:
