@@ -27,6 +27,7 @@ class Fighter():
         self.victory = False
         self.knockback_distance = 0
         self.knockback_cooldown = 0 # recovery frames i guess
+        self.knockback_dx = 0
         self.stun_timer = 0
 
 #animation
@@ -56,8 +57,8 @@ class Fighter():
         if self.knockback_cooldown > 0:
             # 1 second knockback
             self.knockback_cooldown -= 1
-            self.dx = self.knockback_distance 
-        
+            self.rect.x += self.knockback_distance
+
         # player should not be able to do anything after getting hit
         # dunno if this works (shrug)
         if self.stun_on_block:
@@ -65,12 +66,12 @@ class Fighter():
                 self.stun_timer -= 1
                 self.block = True
                 return
+    
         elif self.stun_on_hit:
             if self.stun_timer > 0:
                 self.stun_timer -= 1
-                self.dx = 0
                 return
-            
+        
         #can only move when not attacking
         if self.attacking == False and self.alive == True and round_over == False:
             if self.player == 1:   
@@ -162,7 +163,36 @@ class Fighter():
         #update player position
         self.rect.x += self.dx
 
-    def apply_knockback(self, attacker, attack_type):
+    def apply_knockback_on_block(self, attacker, attack_type):
+        self.knockback_distance = 0
+        self.knockback_cooldown = 5
+        # Knockback logic
+        if attack_type == 1: # Standing Light
+            if self.rect.centerx > attacker.rect.centerx:
+                direction = 1
+            else:
+                direction = -1
+            self.knockback_distance = direction * 5
+        elif attack_type == 2: # Standing Heavy
+            if self.rect.centerx > attacker.rect.centerx:
+                direction = 1
+            else:
+                direction = -1
+            self.knockback_distance = direction * 7
+        elif attack_type == 3: # Crouching Light
+            if self.rect.centerx > attacker.rect.centerx:
+                direction = 1
+            else:
+                direction = -1
+            self.knockback_distance = direction * 5 
+        elif attack_type == 4: # Crouching Heavy
+            if self.rect.centerx > attacker.rect.centerx:
+                direction = 1
+            else:
+                direction = -1
+            self.knockback_distance = direction * 7
+
+    def apply_knockback_on_hit(self, attacker, attack_type):
         self.knockback_distance = 0
         self.knockback_cooldown = 5
         # Knockback logic
@@ -215,7 +245,7 @@ class Fighter():
             if self.attack_type == 1:
                 self.update_action(3) #s.L
             elif self.attack_type == 2:
-                self.update_action(4) 
+                self.update_action(4) #s.H
             elif self.attack_type == 3:
                 self.update_action(6)#c.L  
             elif self.attack_type == 4:
@@ -268,12 +298,12 @@ class Fighter():
             attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 1.7 * self.rect.width, self.rect.height)  
             #if attack is blocked
             if attacking_rect.colliderect(target.rect) and target.block == True:
+                target.apply_knockback_on_block(self, 1)
                 target.stun_on_block(15)
-                pass
             elif attacking_rect.colliderect(target.rect):
                 target.health -= 10
                 target.hit = True
-                target.apply_knockback(self, 1)
+                target.apply_knockback_on_hit(self, 1)
                 target.stun_on_hit(25)
                 
             pygame.draw.rect(surface, (0, 255, 0), attacking_rect)
@@ -284,12 +314,12 @@ class Fighter():
             self.attacking = True
             attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 2.5 * self.rect.width, self.rect.height)
             if attacking_rect.colliderect(target.rect) and target.block == True and target.crouching == False:
+                target.apply_knockback_on_block(self, 2)
                 target.stun_on_block(15)
-                pass
             elif attacking_rect.colliderect(target.rect):
                 target.health -= 20
                 target.hit = True
-                target.apply_knockback(self, 2)
+                target.apply_knockback_on_hit(self, 2)
                 target.stun_on_hit(25)
             pygame.draw.rect(surface, (0, 255, 0), attacking_rect)
 
@@ -298,12 +328,12 @@ class Fighter():
             self.attacking = True
             attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 1.7 * self.rect.width, self.rect.height)  
             if attacking_rect.colliderect(target.rect) and target.block == True and target.crouching == True:
+                target.apply_knockback_on_block(self, 3)
                 target.stun_on_block(15)
-                pass
             elif attacking_rect.colliderect(target.rect):
                 target.health -= 10
                 target.hit = True
-                target.apply_knockback(self, 3)
+                target.apply_knockback_on_hit(self, 3)
                 target.stun_on_hit(25)
             pygame.draw.rect(surface, (0, 255, 0), attacking_rect)     
 
@@ -312,12 +342,12 @@ class Fighter():
             self.attacking = True
             attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 2.3 * self.rect.width, self.rect.height/2) 
             if attacking_rect.colliderect(target.rect) and target.block == True and target.crouching == True:
+                target.apply_knockback_on_block(self, 4)
                 target.stun_on_block(15)
-                pass
             elif attacking_rect.colliderect(target.rect):
                 target.health -= 10
                 target.hit = True
-                target.apply_knockback(self, 4)
+                target.apply_knockback_on_hit(self, 4)
                 target.stun_on_hit(25)
             pygame.draw.rect(surface, (0, 255, 0), attacking_rect)   
 
