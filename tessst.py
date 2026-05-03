@@ -36,17 +36,18 @@ player2_data = [player2_size, player2_scale, player2_offset]
 
 #load spritesheet
 player1_sheet = pygame.image.load("assets/sprites/sora sprite sheet.png")
+player2_sheet = pygame.image.load("assets/sprites/sora sprite sheet_2.png")
 
-player1_animation_steps = [19, 8, 10, 8, 21, 10, 8, 13, 9, 27, 7]
+player1_animation_steps = [19, 8, 10, 8, 13, 10, 8, 13, 9, 27, 7, 8, 21, 10]
 player2_animation_steps = player1_animation_steps
 
 text = pygame.font.SysFont("Wide Latin", 31) #text font and size
 count_text = pygame.font.SysFont("Wide Latin", 100) #counter text
-count_text = pygame.font.SysFont("Wide Latin", 100) #counter text
 score_text = pygame.font.SysFont("Wide Latin", 20) #score text
 
-
+crown_img = pygame.image.load("assets/image/round_crown.png").convert_alpha()
 bg_image = pygame.image.load("assets/image/destiny-islandss.jpg").convert_alpha()
+
 
 def draw_text():
     counter = count_text.render(str(intro_count-1), True, WHITE)
@@ -56,6 +57,10 @@ def draw_bg():
     scaled_bg = pygame.transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
     screen.blit(scaled_bg, (0,0))
 
+def draw_crown():
+    scaled_crown = pygame.transform.scale(crown_img, (0,0))
+    round_count = screen.blit(scaled_crown, (20,200))
+
 #HP bar
 def draw_health_bar(health, x, y):
     ratio = health / 100
@@ -63,10 +68,9 @@ def draw_health_bar(health, x, y):
     pygame.draw.rect(screen, RED, (x, y, 400, 30))
     pygame.draw.rect(screen, YELLOW, (x, y, 400 * ratio, 30))
 
-
 #create 2 instances of fighters
 fighter_1 = Fighter(1, 200, 310, False, player1_data, player1_sheet, player1_animation_steps) #note that fighter class is 155 wide and 260 tall so +-155 on the x position
-fighter_2 = Fighter(2, 700, 310, True, player2_data, player1_sheet, player2_animation_steps)
+fighter_2 = Fighter(2, 700, 310, True, player2_data, player2_sheet, player2_animation_steps)
 
 #GAME LOOP
 run = True
@@ -75,11 +79,13 @@ while run:
     clock.tick(FPS)
 
     draw_bg()
-
+    
     draw_health_bar(fighter_1.health, 20, 20) #width of hp is 400 from def draw_health_bar(health, x, y):
     draw_health_bar(fighter_2.health, 660, 20)
-    screen.blit(score_text.render("P1:  "+ str(score[0]), True, RED), (335, 55))
-    screen.blit(score_text.render("P2:  "+ str(score[1]), True, RED), (660, 55))
+    screen.blit(score_text.render("Wins: "+ str(score[0]), True, RED), (290, 55))
+    screen.blit(score_text.render("Wins: "+ str(score[1]), True, RED), (660, 55))
+    draw_crown()
+
 
     if intro_count <= 1:
         #move fighters
@@ -92,8 +98,7 @@ while run:
         if(pygame.time.get_ticks() - last_count_update) >= 1000:
             intro_count -= 1
             last_count_update = pygame.time.get_ticks()
-            
-
+    
 
     pygame.draw.line(screen, WHITE, (SCREEN_WIDTH/2, 0), (SCREEN_WIDTH/2, 720), 1) #center line
 
@@ -112,13 +117,13 @@ while run:
 
     
     
-    if score == [2,0]:
+    if score [0] == 2:
         player_text = text.render("Player 1 Wins!", True, WHITE) #text to show player 1 name
         textPosition = screen.blit(player_text, (SCREEN_WIDTH/3, SCREEN_HEIGHT/3))
         
-    elif score == [0,2]:
+    elif score [1] == 2:
         player_text = text.render("Player 2 Wins!", True, WHITE) #text to show player 1 name
-        textPosition = screen.blit(SCREEN_WIDTH/3, SCREEN_HEIGHT/3)  
+        textPosition = screen.blit(player_text, (SCREEN_WIDTH/3, SCREEN_HEIGHT/3))  
     else:
         #check for player defeat
         if round_over == False:
@@ -131,7 +136,6 @@ while run:
                 round_over = True
                 round_over_time = pygame.time.get_ticks()
         else:
-            screen.blit(player1_text, (500, 300))
             if pygame.time.get_ticks() - round_over_time > round_over_cooldown:
                 round_over = False
                 intro_count = 4
