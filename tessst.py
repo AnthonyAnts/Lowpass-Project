@@ -36,9 +36,98 @@ player2_data = [player2_size, player2_scale, player2_offset]
 
 #load spritesheet
 player1_sheet = pygame.image.load("assets/sprites/sora sprite sheet.png")
+#player2_sheet = pygame.image.load("")
 
-player1_animation_steps = [19, 8, 10, 8, 21, 10, 6, 13, 9, 27, 7]
-player2_animation_steps = player1_animation_steps
+player_animation_steps = {
+    "idle": {"frames": 19},
+    "running": {"frames": 8},
+    "walking_back": {"frames": 10},
+    "standing_light": {
+        "frames": 8,
+        "startup": 2,
+        "active": 3,
+        "recovery": 3,
+        "hitbox": {
+            "width_multiplier": 1.7,
+            "height_multiplier": 1.0,
+        },
+        "on_hit": {
+            "damage": 10,
+            "stun": 12,
+            "knockback": 12,
+        },
+        "on_block": {
+            "stun": 5,
+            "knockback": 10
+        },
+    },
+
+    "standing_heavy": {
+        "frames": 21,
+        "startup": 10,
+        "active": 4,
+        "recovery": 8,
+        "hitbox": {
+            "width_multiplier": 2.0,
+            "height_multiplier": 1.0,
+        },
+        "on_hit": { 
+            "damage": 20,
+            "stun": 20,
+            "knockback": 20,
+        }, 
+        "on_block": {
+            "stun": 10,
+            "knockback": 15
+        },
+    },
+
+    "crouching": {"frames": 10},
+
+    "crouching_light": {
+        "frames": 8,
+        "startup": 2,
+        "active": 3,
+        "recovery": 3,
+        "hitbox": {
+            "width_multiplier": 1.7,
+            "height_multiplier": 1.0,
+        },
+        "on_hit": {
+            "damage": 5,
+            "stun": 12,
+            "knockback": 12,
+        }, 
+        "on_block": {
+            "stun": 5,
+            "knockback": 10
+        }, 
+    },
+
+    "crouching_heavy": {
+        "frames": 13,
+        "startup": 6,
+        "active": 3,
+        "recovery": 4,
+        "hitbox": {
+            "width_multiplier": 1.9,
+            "height_multiplier": 0.5, 
+        },
+        "on_hit": {
+            "damage": 20,
+            "stun": 18,
+            "knockback": 18,
+        },
+        "on_block": {
+            "stun": 8,
+            "knockback": 12
+        },
+    },
+    "hurt": {"frames": 8},
+    "victory": {"frames": 9},
+    "defeat": {"frames": 10},
+}
+player2_animation_steps = player_animation_steps
 
 text = pygame.font.SysFont("Wide Latin", 31) #text font and size
 count_text = pygame.font.SysFont("Wide Latin", 100) #counter text
@@ -65,8 +154,8 @@ def draw_health_bar(health, x, y):
 
 
 #create 2 instances of fighters
-fighter_1 = Fighter(1, 200, 310, False, player1_data, player1_sheet, player1_animation_steps) #note that fighter class is 155 wide and 260 tall so +-155 on the x position
-fighter_2 = Fighter(2, 700, 310, True, player2_data, player1_sheet, player2_animation_steps)
+fighter_1 = Fighter(1, 200, 310, False, player1_data, player1_sheet, player_animation_steps) #note that fighter class is 155 wide and 260 tall so +-155 on the x position
+fighter_2 = Fighter(2, 700, 310, True, player2_data, player1_sheet, player_animation_steps)
 
 #GAME LOOP
 run = True
@@ -110,13 +199,11 @@ while run:
     fighter_1.draw(screen)
     fighter_2.draw(screen)
 
-    
-    
-    if score == [2,0]:
+    if score[0] == 2:
         player_text = text.render("Player 1 Wins!", True, WHITE) #text to show player 1 name
         textPosition = screen.blit(player_text, (SCREEN_WIDTH/3, SCREEN_HEIGHT/3))
         
-    elif score == [0,2]:
+    elif score[1] == 2:
         player_text = text.render("Player 2 Wins!", True, WHITE) #text to show player 1 name
         textPosition = screen.blit(SCREEN_WIDTH/3, SCREEN_HEIGHT/3)  
     else:
@@ -135,7 +222,7 @@ while run:
             if pygame.time.get_ticks() - round_over_time > round_over_cooldown:
                 round_over = False
                 intro_count = 4
-                fighter_1 = Fighter(1, 200, 310, False, player1_data, player1_sheet, player1_animation_steps) 
+                fighter_1 = Fighter(1, 200, 310, False, player1_data, player1_sheet, player_animation_steps) 
                 fighter_2 = Fighter(2, 700, 310, True, player2_data, player1_sheet, player2_animation_steps)
 
     for event in pygame.event.get():
