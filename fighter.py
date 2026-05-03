@@ -27,6 +27,7 @@ class Fighter():
         self.victory = False
         self.knockback_distance = 0
         self.knockback_cooldown = 0 # recovery frames i guess
+        self.stun_timer = 0
 
 #animation
     def load_images(self, sprite_sheet, animation_steps):
@@ -56,7 +57,20 @@ class Fighter():
             # 1 second knockback
             self.knockback_cooldown -= 1
             self.dx = self.knockback_distance 
-
+        
+        # player should not be able to do anything after getting hit
+        # dunno if this works (shrug)
+        if self.stun_on_block:
+            if self.stun_timer > 0:
+                self.stun_timer -= 1
+                self.block = True
+                return
+        elif self.stun_on_hit:
+            if self.stun_timer > 0:
+                self.stun_timer -= 1
+                self.dx = 0
+                return
+            
         #can only move when not attacking
         if self.attacking == False and self.alive == True and round_over == False:
             if self.player == 1:   
@@ -177,8 +191,12 @@ class Fighter():
                 direction = -1
             self.knockback_distance = direction * 12
 
-        
+    def stun_on_hit(self,duration):
+        self.stun_timer = duration
 
+    def stun_on_block(self, duration):
+        self.stun_timer = duration
+        self.block = True
 
     #handle animation update
     def update(self, target):
@@ -250,11 +268,13 @@ class Fighter():
             attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 1.7 * self.rect.width, self.rect.height)  
             #if attack is blocked
             if attacking_rect.colliderect(target.rect) and target.block == True:
+                target.stun_on_block(15)
                 pass
             elif attacking_rect.colliderect(target.rect):
                 target.health -= 10
                 target.hit = True
                 target.apply_knockback(self, 1)
+                target.stun_on_hit(25)
                 
             pygame.draw.rect(surface, (0, 255, 0), attacking_rect)
             
@@ -264,11 +284,13 @@ class Fighter():
             self.attacking = True
             attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 2.5 * self.rect.width, self.rect.height)
             if attacking_rect.colliderect(target.rect) and target.block == True and target.crouching == False:
+                target.stun_on_block(15)
                 pass
             elif attacking_rect.colliderect(target.rect):
                 target.health -= 20
                 target.hit = True
                 target.apply_knockback(self, 2)
+                target.stun_on_hit(25)
             pygame.draw.rect(surface, (0, 255, 0), attacking_rect)
 
     def c_L_attack(self, surface, target):
@@ -276,11 +298,13 @@ class Fighter():
             self.attacking = True
             attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 1.7 * self.rect.width, self.rect.height)  
             if attacking_rect.colliderect(target.rect) and target.block == True and target.crouching == True:
+                target.stun_on_block(15)
                 pass
             elif attacking_rect.colliderect(target.rect):
                 target.health -= 10
                 target.hit = True
                 target.apply_knockback(self, 3)
+                target.stun_on_hit(25)
             pygame.draw.rect(surface, (0, 255, 0), attacking_rect)     
 
     def c_H_attack(self, surface, target):
@@ -288,11 +312,13 @@ class Fighter():
             self.attacking = True
             attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 2.3 * self.rect.width, self.rect.height/2) 
             if attacking_rect.colliderect(target.rect) and target.block == True and target.crouching == True:
+                target.stun_on_block(15)
                 pass
             elif attacking_rect.colliderect(target.rect):
                 target.health -= 10
                 target.hit = True
                 target.apply_knockback(self, 4)
+                target.stun_on_hit(25)
             pygame.draw.rect(surface, (0, 255, 0), attacking_rect)   
 
         
