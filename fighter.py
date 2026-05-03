@@ -1,365 +1,148 @@
 import pygame
-import time
+from fighter import Fighter
 
-class Fighter():
-    def __init__(self, player, x, y, flip, data, sprite_sheet, animation_steps):
-        self.player = player
-        self.size = data[0]
-        self.image_scale = data[1]
-        self.offset = data[2]
-        self.flip = flip
-        self.animation_list = self.load_images(sprite_sheet, animation_steps)
-        self.action = 0 #0:idle 1:running 2: walking back 3:s.L 4:s.H 5:crouching 6:c.L 7:c.H 8:Hurt 9:Victory 10:Defeat
-        self.frame_index = 0
-        self.image = self.animation_list[self.action][self.frame_index]
-        self.update_time = pygame.time.get_ticks()
-        self.rect = pygame.Rect((x, y, 155, 260)) #hurtbox
-        self.walking = False
-        self.walking_back = False
-        self.crouching = False
-        self.attacking = False
-        self.attack_type = 0
-        self.attack_cooldown = 0 #this is where frame data comes in
-        self.hit = False 
-        self.health = 100
-        self.alive = True
-        self.block = False
-        self.victory = False
-        self.knockback_distance = 0
-        self.knockback_cooldown = 0 # recovery frames i guess
-        self.knockback_dx = 0
-        self.stun_timer = 0
+pygame.init()
 
-#animation
-    def load_images(self, sprite_sheet, animation_steps):
-        animation_list = []
-        for y, animation in enumerate(animation_steps):
-            temp_img_list = []    
-            for x in range(animation):
-                temp_img = sprite_sheet.subsurface(x * self.size, y * self.size , self.size, self.size)
-                temp_img_list.append(pygame.transform.scale(temp_img, (self.size * self.image_scale, self.size * self.image_scale)))
-            animation_list.append(temp_img_list)
-        return animation_list
+SCREEN_WIDTH=1080
+SCREEN_HEIGHT=620
 
-#movement
-    def move(self, screen_width, surface, target, round_over):
-        self.SPEED = 20 #trial and error walking speed
-        self.dx = 0    
-        self.walking = False
-        self.walking_back = False
-        self.crouching = False
-        self.block = False
-        self.attack_type = 0
-    
-        key = pygame.key.get_pressed()
-        ki = pygame.KEYDOWN
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Coast Pyter")
 
-        if self.knockback_cooldown > 0:
-            # 1 second knockback
-            self.knockback_cooldown -= 1
-            self.rect.x += self.knockback_distance
+clock = pygame.time.Clock()
+FPS = 60
 
-        # player should not be able to do anything after getting hit
-        # dunno if this works (shrug)
-        if self.stun_on_block:
-            if self.stun_timer > 0:
-                self.stun_timer -= 1
-                self.block = True
-                return
-    
-        elif self.stun_on_hit:
-            if self.stun_timer > 0:
-                self.stun_timer -= 1
-                return
-        
-        #can only move when not attacking
-        if self.attacking == False and self.alive == True and round_over == False:
-            if self.player == 1:   
-            #movement
-                if key[pygame.K_a]:
-                    self.dx = -self.SPEED + 10 #walking back speed
-                    self.walking_back = True
-                    self.block = True
-                if key[pygame.K_d]:
-                    self.dx = self.SPEED
-                    self.walking = True
-                if key[pygame.K_s]:
-                    self.dx = 0
-                    self.crouching = True
-               
-                #attack
-                #c.L
-                if key[pygame.K_j] and key[pygame.K_s]:
-                    self.c_L_attack(surface, target)
-                    self.attack_type = 3
-                #c.H        
-                elif key[pygame.K_k] and key[pygame.K_s]:
-                    self.c_H_attack(surface, target)
-                    self.attack_type = 4
-                #s.L
-                elif key[pygame.K_j]:
-                    self.s_L_attack(surface, target)
-                    self.attack_type = 1
-                #s.H         
-                elif key[pygame.K_k]:
-                    self.s_H_attack(surface, target)
-                    self.attack_type = 2
+RED = (255, 0, 0)
+YELLOW = (255, 255, 0)
+WHITE = (255, 255, 255)
 
-            #check player 2 control
-            if self.player == 2:   
-            #movement
-                if key[pygame.K_LEFT]:
-                    self.dx = -self.SPEED
-                    self.walking = True
-                if key[pygame.K_RIGHT]:
-                    self.dx = self.SPEED - 10 #walking back speed
-                    self.walking_back = True
-                    self.block = True
-                if key[pygame.K_DOWN]:
-                    self.dx = 0
-                    self.crouching = True
-               
-                #attack
-                #c.L
-                if key[pygame.K_KP_2] and key[pygame.K_DOWN]:
-                    self.c_L_attack(surface, target)
-                    self.attack_type = 3
-                #c.H        
-                elif key[pygame.K_KP_3] and key[pygame.K_DOWN]:
-                    self.c_H_attack(surface, target)
-                    self.attack_type = 4
-                #s.L
-                elif key[pygame.K_KP_2]:
-                    self.s_L_attack(surface, target)
-                    self.attack_type = 1
-                #s.H         
-                elif key[pygame.K_KP_3]:
-                    self.s_H_attack(surface, target)
-                    self.attack_type = 2
+#define game variables
+intro_count = 4
+last_count_update = pygame.time.get_ticks()
+score = [0,0] #[P1, P2]
+round_over = False
+round_over_cooldown = 2000
+
+#define fighter variables
+player1_size = 120
+player1_scale = 5
+player1_offset = [44, 68] #trial and error
+player1_data = [player1_size, player1_scale, player1_offset]
+
+player2_size = 120
+player2_scale = 5
+player2_offset = [45, 68]
+player2_data = [player2_size, player2_scale, player2_offset]
+
+#load spritesheet
+player1_sheet = pygame.image.load("assets/sprites/sora sprite sheet.png")
+
+player1_animation_steps = [19, 8, 10, 8, 21, 10, 6, 13, 9, 27, 7]
+player2_animation_steps = player1_animation_steps
+
+text = pygame.font.SysFont("Wide Latin", 31) #text font and size
+count_text = pygame.font.SysFont("Wide Latin", 100) #counter text
+count_text = pygame.font.SysFont("Wide Latin", 100) #counter text
+score_text = pygame.font.SysFont("Wide Latin", 20) #score text
 
 
-        #wall limit
-        if self.rect.left + self.dx < 0:
-            self.dx = -self.rect.left
-        if self.rect.right + self.dx > screen_width:
-            self.dx = screen_width - self.rect.right
-        
-        # collision 
-        player_border = self.rect.move(self.dx, 0)
-        if player_border.colliderect(target.rect):
-            self.dx = 0
-        
-        #flip to face each other (for player 2 flip)
-        if target.rect.centerx > self.rect.centerx:
-            self.flip = False
-        else:
-            self.flip = True
+bg_image = pygame.image.load("assets/image/destiny-islandss.jpg").convert_alpha()
 
-        #apply attack cooldown
-        if self.attack_cooldown > 0:
-            self.attack_cooldown -= 1
+def draw_text():
+    counter = count_text.render(str(intro_count-1), True, WHITE)
+    counter_postion = screen.blit(counter, (480, SCREEN_HEIGHT/4))
 
-        #update player position
-        self.rect.x += self.dx
+def draw_bg():
+    scaled_bg = pygame.transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    screen.blit(scaled_bg, (0,0))
 
-    def apply_knockback_on_block(self, attacker, attack_type):
-        self.knockback_distance = 0
-        self.knockback_cooldown = 5
-        # Knockback logic
-        if attack_type == 1: # Standing Light
-            if self.rect.centerx > attacker.rect.centerx:
-                direction = 1
-            else:
-                direction = -1
-            self.knockback_distance = direction * 5
-        elif attack_type == 2: # Standing Heavy
-            if self.rect.centerx > attacker.rect.centerx:
-                direction = 1
-            else:
-                direction = -1
-            self.knockback_distance = direction * 7
-        elif attack_type == 3: # Crouching Light
-            if self.rect.centerx > attacker.rect.centerx:
-                direction = 1
-            else:
-                direction = -1
-            self.knockback_distance = direction * 5 
-        elif attack_type == 4: # Crouching Heavy
-            if self.rect.centerx > attacker.rect.centerx:
-                direction = 1
-            else:
-                direction = -1
-            self.knockback_distance = direction * 7
+#HP bar
+def draw_health_bar(health, x, y):
+    ratio = health / 100
+    pygame.draw.rect(screen, WHITE, (x - 3, y - 3, 406, 36))
+    pygame.draw.rect(screen, RED, (x, y, 400, 30))
+    pygame.draw.rect(screen, YELLOW, (x, y, 400 * ratio, 30))
 
-    def apply_knockback_on_hit(self, attacker, attack_type):
-        self.knockback_distance = 0
-        self.knockback_cooldown = 5
-        # Knockback logic
-        if attack_type == 1: # Standing Light
-            if self.rect.centerx > attacker.rect.centerx:
-                direction = 1
-            else:
-                direction = -1
-            self.knockback_distance = direction * 10
-        elif attack_type == 2: # Standing Heavy
-            if self.rect.centerx > attacker.rect.centerx:
-                direction = 1
-            else:
-                direction = -1
-            self.knockback_distance = direction * 12
-        elif attack_type == 3: # Crouching Light
-            if self.rect.centerx > attacker.rect.centerx:
-                direction = 1
-            else:
-                direction = -1
-            self.knockback_distance = direction * 10 
-        elif attack_type == 4: # Crouching Heavy
-            if self.rect.centerx > attacker.rect.centerx:
-                direction = 1
-            else:
-                direction = -1
-            self.knockback_distance = direction * 12
 
-    def stun_on_hit(self,duration):
-        self.stun_timer = duration
+#create 2 instances of fighters
+fighter_1 = Fighter(1, 200, 310, False, player1_data, player1_sheet, player1_animation_steps) #note that fighter class is 155 wide and 260 tall so +-155 on the x position
+fighter_2 = Fighter(2, 700, 310, True, player2_data, player1_sheet, player2_animation_steps)
 
-    def stun_on_block(self, duration):
-        self.stun_timer = duration
-        self.block = True
+#GAME LOOP
+run = True
+while run:
 
-    #handle animation update
-    def update(self, target):
-        #check what action player performed
-        if self.health <= 0:
-            self.health = 0
-            self.alive = False
-            self.update_action(10)
-        elif target.health <= 0:
-            self.victory = True
-            self.update_action(9)
+    clock.tick(FPS)
 
-        elif self.hit == True:
-            self.update_action(8)#hit/hurt
-        elif self.attacking == True:
-            if self.attack_type == 1:
-                self.update_action(3) #s.L
-            elif self.attack_type == 2:
-                self.update_action(4) #s.H
-            elif self.attack_type == 3:
-                self.update_action(6)#c.L  
-            elif self.attack_type == 4:
-                self.update_action(7)#c.h        
-        elif self.walking == True:
-            if self.crouching == True:
-                self.update_action(5)#crouch
-            else:
-                self.update_action(1) #walk
-        elif self.walking_back == True:
-            if self.crouching == True:
-                self.update_action(5)#crouch
-            else:
-                self.update_action(2) #walk back
-        elif self.crouching == True:
-            self.update_action(5)#crouch
-        else:
-            self.update_action(0) #idle
-   
-        #amount of time to get to the next frame
-        animation_cooldown = 30
-        self.image = self.animation_list[self.action][self.frame_index]
-        
-        if pygame.time.get_ticks() - self.update_time > animation_cooldown:
-            self.frame_index += 1
-            self.update_time = pygame.time.get_ticks()
-        #check if animation has finished
-        if self.frame_index >= len(self.animation_list[self.action]):
-            #check if player is defeated then end the animation
-            if self.alive == False:
-                self.frame_index = len(self.animation_list[self.action]) - 1
-            elif self.victory == True:
-                self.frame_index = len(self.animation_list[self.action]) - 1
-            else:
-                self.frame_index = 0
-                #check if an attact was executed
-                if self.action == 3 or self.action == 4 or self.action == 6 or self.action == 7:
-                    self.attacking = False
-                    self.attack_cooldown = 5 #adjust for frame data
-                #check if damage was taken
-                if self.action == 8:
-                    self.hit = False
-                    #if the player was in the middle of an attack, then attack is stopped
-                    self.attacking = False
-                    self.attack_cooldown = 10 #need to adjust for frame data
+    draw_bg()
 
-    def s_L_attack(self, surface, target):
-        if self.attack_cooldown == 0:
-            self.attacking = True
-            attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 1.7 * self.rect.width, self.rect.height)  
-            #if attack is blocked
-            if attacking_rect.colliderect(target.rect) and target.block == True:
-                target.apply_knockback_on_block(self, 1)
-                target.stun_on_block(15)
-            elif attacking_rect.colliderect(target.rect):
-                target.health -= 10
-                target.hit = True
-                target.apply_knockback_on_hit(self, 1)
-                target.stun_on_hit(25)
-                
-            pygame.draw.rect(surface, (0, 255, 0), attacking_rect)
+    draw_health_bar(fighter_1.health, 20, 20) #width of hp is 400 from def draw_health_bar(health, x, y):
+    draw_health_bar(fighter_2.health, 660, 20)
+    screen.blit(score_text.render("P1:  "+ str(score[0]), True, RED), (335, 55))
+    screen.blit(score_text.render("P2:  "+ str(score[1]), True, RED), (660, 55))
+
+    if intro_count <= 1:
+        #move fighters
+        fighter_1.move (SCREEN_WIDTH, screen, fighter_2, round_over)
+        fighter_2.move (SCREEN_WIDTH, screen, fighter_1, round_over)
+
+    else:
+        draw_text()
+        #update count timer
+        if(pygame.time.get_ticks() - last_count_update) >= 1000:
+            intro_count -= 1
+            last_count_update = pygame.time.get_ticks()
             
+
+
+    pygame.draw.line(screen, WHITE, (SCREEN_WIDTH/2, 0), (SCREEN_WIDTH/2, 720), 1) #center line
+
+    #player name text/image
+    player1_text = text.render("Player 1", True, WHITE) #text to show player 1 name
+    textPosition = screen.blit(player1_text, (20, 55))
+    player2_text = text.render("Player 2", True, WHITE) #text to show player 2 name
+    textPosition = screen.blit(player2_text, (838, 55))
+
+    #update fighters
+    fighter_1.update(fighter_2)
+    fighter_2.update(fighter_1)
+
+    fighter_1.draw(screen)
+    fighter_2.draw(screen)
+
     
-    def s_H_attack(self, surface, target):
-        if self.attack_cooldown == 0:
-            self.attacking = True
-            attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 2 * self.rect.width, self.rect.height)
-            if attacking_rect.colliderect(target.rect) and target.block == True and target.crouching == False:
-                target.apply_knockback_on_block(self, 2)
-                target.stun_on_block(15)
-            elif attacking_rect.colliderect(target.rect):
-                target.health -= 20
-                target.hit = True
-                target.apply_knockback_on_hit(self, 2)
-                target.stun_on_hit(25)
-            pygame.draw.rect(surface, (0, 255, 0), attacking_rect)
-
-    def c_L_attack(self, surface, target):
-        if self.attack_cooldown == 0:
-            self.attacking = True
-            attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 1.7 * self.rect.width, self.rect.height)  
-            if attacking_rect.colliderect(target.rect) and target.block == True and target.crouching == True:
-                target.apply_knockback_on_block(self, 3)
-                target.stun_on_block(15)
-            elif attacking_rect.colliderect(target.rect):
-                target.health -= 10
-                target.hit = True
-                target.apply_knockback_on_hit(self, 3)
-                target.stun_on_hit(25)
-            pygame.draw.rect(surface, (0, 255, 0), attacking_rect)     
-
-    def c_H_attack(self, surface, target):
-        if self.attack_cooldown == 0:
-            self.attacking = True
-            attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 1.9 * self.rect.width, self.rect.height/2) 
-            if attacking_rect.colliderect(target.rect) and target.block == True and target.crouching == True:
-                target.apply_knockback_on_block(self, 4)
-                target.stun_on_block(15)
-            elif attacking_rect.colliderect(target.rect):
-                target.health -= 10
-                target.hit = True
-                target.apply_knockback_on_hit(self, 4)
-                target.stun_on_hit(25)
-            pygame.draw.rect(surface, (0, 255, 0), attacking_rect)   
-
+    
+    if score[0] == 2:
+        player_text = text.render("Player 1 Wins!", True, WHITE) #text to show player 1 name
+        textPosition = screen.blit(player_text, (SCREEN_WIDTH/3, SCREEN_HEIGHT/3))
         
-    def update_action(self, new_action):
-        #check if new action is different to the prev one
-        if new_action != self.action:
-            self.action = new_action
-            #update the animation settings
-            self.frame_index = 0
-            self.update_time = pygame.time.get_ticks()
+    elif score[1] == 2:
+        player_text = text.render("Player 2 Wins!", True, WHITE) #text to show player 1 name
+        textPosition = screen.blit(SCREEN_WIDTH/3, SCREEN_HEIGHT/3)  
+    else:
+        #check for player defeat
+        if round_over == False:
+            if fighter_1.alive == False:
+                score [1] += 1
+                round_over = True
+                round_over_time = pygame.time.get_ticks()
+            elif fighter_2.alive == False:
+                score [0] += 1
+                round_over = True
+                round_over_time = pygame.time.get_ticks()
+        else:
+            screen.blit(player1_text, (500, 300))
+            if pygame.time.get_ticks() - round_over_time > round_over_cooldown:
+                round_over = False
+                intro_count = 4
+                fighter_1 = Fighter(1, 200, 310, False, player1_data, player1_sheet, player1_animation_steps) 
+                fighter_2 = Fighter(2, 700, 310, True, player2_data, player1_sheet, player2_animation_steps)
 
-    def draw(self, surface):
-        img = pygame.transform.flip(self.image, self.flip, False)
-        pygame.draw.rect(surface, (255, 0, 0), self.rect)
-        surface.blit(img, (self.rect.x - (self.offset[0] * self.image_scale), self.rect.y - (self.offset[1] * self.image_scale)))
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+
+    
+    pygame.display.update()
+
+pygame.quit()
