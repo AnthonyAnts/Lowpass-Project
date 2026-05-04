@@ -1,5 +1,6 @@
 import pygame
 from fighter import Fighter
+from button import Button
 
 pygame.init()
 
@@ -15,6 +16,8 @@ FPS = 60
 RED = (255, 0, 0)
 YELLOW = (255, 235, 0)
 WHITE = (255, 255, 255)
+
+#game states
 
 #define game variables
 intro_count = 4
@@ -34,12 +37,13 @@ player2_scale = 5
 player2_offset = [45, 68]
 player2_data = [player2_size, player2_scale, player2_offset]
 
-#load spritesheet
-player1_sheet = pygame.image.load("assets/sprites/sora sprite sheet.png")
-player2_sheet = pygame.image.load("assets/sprites/sora sprite sheet_2.png")
-
+#number of frames per actions
 player1_animation_steps = [19, 8, 10, 8, 13, 10, 8, 13, 9, 27, 7, 8, 21, 10]
 player2_animation_steps = player1_animation_steps
+
+#load spritesheet / text / image
+player1_sheet = pygame.image.load("assets/sprites/sora sprite sheet.png")
+player2_sheet = pygame.image.load("assets/sprites/sora sprite sheet_2.png")
 
 text = pygame.font.SysFont("Wide Latin", 31) #text font and size
 count_text = pygame.font.SysFont("Wide Latin", 100) #counter text
@@ -49,6 +53,19 @@ bg_image = pygame.image.load("assets/image/destiny-islandss.jpg").convert_alpha(
 player_names = pygame.image.load("assets/image/player names.png").convert_alpha()
 player1_win = pygame.image.load("assets/image/player1 WINS.png")
 player2_win = pygame.image.load("assets/image/player2 WINS.png")
+play_img = pygame.image.load("assets/image/play_button.png")
+help_img = pygame.image.load("assets/image/help_button.png")
+back_img = pygame.image.load("assets/image/back_button.png")
+quit_img = pygame.image.load("assets/image/quit_button.png")
+leave_img = pygame.image.load("assets/image/leave_button.png")
+
+#button instances
+play_button = Button(0,0, play_img, 1)
+help_button = Button(0,0, help_img, 1)
+back_button = Button(0,0, back_img, 1)
+quit_button = Button(0,0, quit_img, 1)
+leave_button = Button(0,0, leave_img, 1)
+
 
 def draw_names():
     scaled_name = pygame.transform.scale(player_names, (SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -95,10 +112,13 @@ while run:
     clock.tick(FPS)
 
     draw_bg()
-    
+
     draw_health_bar(fighter_1.health, 20, 20) #width of hp is 400 from def draw_health_bar(health, x, y):
     draw_health_bar(fighter_2.health, 660, 20)
+    #player name text/image
+    draw_names()
 
+    #draws number of wins per round
     if score[0] == 1:
         draw_crown1(270)
     if score[0] == 2:
@@ -123,17 +143,12 @@ while run:
 
     pygame.draw.line(screen, WHITE, (SCREEN_WIDTH/2, 0), (SCREEN_WIDTH/2, 720), 1) #center line
 
-    #player name text/image
-    draw_names()
-
     #update fighters
     fighter_1.update(fighter_2)
     fighter_2.update(fighter_1)
 
     fighter_1.draw(screen)
     fighter_2.draw(screen)
-
-    
     
     if score [0] == 2:
         draw_player_win(1)
