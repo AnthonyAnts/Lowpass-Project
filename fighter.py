@@ -238,11 +238,13 @@ class Fighter():
         if not self.alive:
             if self.action != "defeat":
                 self.update_action("defeat") # once dead, frame_index = 0
+                self.stun_timer = 5 # very lazy way to stop player from pressing any buttons once defeated
             
             anim = self.animations["defeat"]
             self.anim_counter += 1
             speed = self.animation_data["defeat"].get("speed", 4)
 
+            # ensure defeat animation plays consistently
             if self.anim_counter >= speed:
                 if self.frame_index < len(anim) - 1:
                     self.frame_index += 1
@@ -333,8 +335,8 @@ class Fighter():
         # i love procedural programming
 
         # debug
-        # if self.player == 2:
-            # print(f"Action: {self.action} | Blocking: {self.block} | WalkBack: {self.walking_back}")
+        if self.player == 2:
+            print(f"Action: {self.action} | Blocking: {self.block} | WalkBack: {self.walking_back}")
             # print(f"Stun: {self.stun_timer} | Target Stun: {target.stun_timer}")
         
     def attack(self, target, surface, vfx_group):
@@ -367,16 +369,31 @@ class Fighter():
             attacking_rect = pygame.Rect(x, y, width, height)
 
             # debug spawning hitbox
-            # pygame.draw.rect(surface, (0, 255, 0), attacking_rect)
+            pygame.draw.rect(surface, (0, 255, 0), attacking_rect)
 
             if attacking_rect.colliderect(target.rect):
                 self.hitstop = 2 # hitstop is for animations to make them look cooler
                 target.hitstop = 4
 
-                # diabolical assignment to fetch vfx_anim type without having to make a method block about it
-                vfx_name = f"{self.attack_type}_vfx"
+                if target.crouching and (self.attack_type == "crouching_light" or self.attack_type == "crouching_heavy") and not target.block: # crouching block beats all crouching moves
+                    self.attack_landed = True # flag to set gatling on hit confirm
+                    hit = self.attack_data["on_hit"]
+                    target.hit = True
+                    target.hurt_timer = hit["stun"]
+                    target.health -= hit["damage"]
+                    target.apply_knockback(hit["knockback"], self.flip)
+                    target.stun_on_hit(hit["stun"])
 
-                if target.block:
+                elif target.crouching and target.block and self.attack_type == "standing_heavy": # standing_heavy beats crouching block
+                    self.attack_landed = True # flag to set gatling on hit confirm
+                    hit = self.attack_data["on_hit"]
+                    target.hit = True
+                    target.hurt_timer = hit["stun"]
+                    target.health -= hit["damage"]
+                    target.apply_knockback(hit["knockback"], self.flip)
+                    target.stun_on_hit(hit["stun"])
+
+                elif target.block:
                     self.attack_landed = False # flag to set no gatling on block
                     block = self.attack_data["on_block"]
                     target_block = self.attack_data["on_target_block"]
@@ -388,7 +405,10 @@ class Fighter():
 
                     # apply self stun and knockback
                     self.on_target_block(target_block["stun"])
-                    self.apply_knockback(target_block["knockback"], False)
+                    if self.flip:
+                        self.apply_knockback(target_block["knockback"], False)
+                    else:
+                        self.apply_knockback(target_block["knockback"], True)
                     
 
                     # player 1 block vfx
@@ -405,15 +425,6 @@ class Fighter():
                     block_vfx_y = target.rect.centery - y_offset
                     block_vfx = VFX(block_vfx_x, block_vfx_y, self.vfx_animations["block"], speed = 4, flip = block_vfx_flip)
                     vfx_group.add(block_vfx)
-
-                else:
-                    self.attack_landed = True # flag to set gatling on hit confirm
-                    hit = self.attack_data["on_hit"]
-                    target.hit = True
-                    target.hurt_timer = hit["stun"]
-                    target.health -= hit["damage"]
-                    target.apply_knockback(hit["knockback"], self.flip)
-                    target.stun_on_hit(hit["stun"])
         # attack reset
         elif self.attack_timer > startup + active + recovery:
             self.attacking = False
@@ -450,7 +461,8 @@ class Fighter():
 
     def draw(self, surface):
         img = pygame.transform.flip(self.image, self.flip, False)
-        pygame.draw.rect(surface, (255, 0, 0), self.rect)
+        # debug
+        # pygame.draw.rect(surface, (255, 0, 0), self.rect)
         # draw sora
         surface.blit(
             img,
