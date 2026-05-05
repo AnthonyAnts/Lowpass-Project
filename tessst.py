@@ -1,6 +1,5 @@
 import pygame
 from fighter import Fighter
-from button import Button
 
 pygame.init()
 
@@ -16,8 +15,6 @@ FPS = 60
 RED = (255, 0, 0)
 YELLOW = (255, 235, 0)
 WHITE = (255, 255, 255)
-
-#game states
 
 #define game variables
 intro_count = 4
@@ -37,35 +34,168 @@ player2_scale = 5
 player2_offset = [45, 68]
 player2_data = [player2_size, player2_scale, player2_offset]
 
-#number of frames per actions
-player1_animation_steps = [19, 8, 10, 8, 13, 10, 8, 13, 9, 27, 7, 8, 21, 10]
-player2_animation_steps = player1_animation_steps
-
-#load spritesheet / text / image
+#load spritesheet
 player1_sheet = pygame.image.load("assets/sprites/sora sprite sheet.png")
 player2_sheet = pygame.image.load("assets/sprites/sora sprite sheet_2.png")
+vfx_sheet = pygame.image.load("assets/sprites/vfx sprite sheet.png").convert_alpha()
+
+player_animation_steps = { # lower speed value = faster, higher speed value = slower, how it works: frame division, 60 frames/2 = 30, runs at 30 fps
+    "idle": {"frames": 19, "speed": 4},
+    "walk": {"frames": 8, "speed": 8},
+    "walk_back": {"frames": 10, "speed": 6},
+    "standing_light": {
+        "frames": 8,
+        "startup": 4, # To make it faster: lower startup and/or recovery. To make it slower, increase startup/recovery.
+        "active": 6, # remember, we're running at 60 fps so if you're counting sprites, divide 60 by the tally
+        "recovery": 10,
+        "hitbox": {
+            "width_multiplier": 1.0,
+            "height_multiplier": 1.0,
+        },
+        "on_hit": {
+            "damage": 10,
+            "stun": 12,
+            "knockback": 12,
+        },
+        "on_block": {
+            "stun": 5,
+            "knockback": 10
+        },
+        "on_target_block": {
+            "stun": 10,
+            "knockback": 10
+        },
+        "gatling": ["standing_heavy", "crouching_heavy"],
+    },
+
+    "standing_heavy": {
+        "frames": 13,
+        "startup": 2,
+        "active": 4,
+        "recovery": 30,
+        "hitbox": {
+            "width_multiplier": 1.5,
+            "height_multiplier": 1.0,
+        },
+        "on_hit": { 
+            "damage": 20,
+            "stun": 20,
+            "knockback": 20,
+        }, 
+        "on_block": {
+            "stun": 12,
+            "knockback": 15
+        },
+        "on_target_block": {
+            "stun": 30,
+            "knockback": 5
+        },
+    },
+
+    "crouch": {"frames": 10},
+
+    "crouching_light": {
+        "frames": 8,
+        "startup": 4,
+        "active": 4,
+        "recovery": 10,
+        "hitbox": {
+            "width_multiplier": 0.9,
+            "height_multiplier": 1.0,
+        },
+        "on_hit": {
+            "damage": 5,
+            "stun": 12,
+            "knockback": 12,
+        }, 
+        "on_block": {
+            "stun": 10,
+            "knockback": 10
+        }, 
+        "on_target_block": {
+            "stun": 10,
+            "knockback": 5
+        },
+        "gatling": ["standing_heavy", "crouching_heavy"],
+    },
+
+    "crouching_heavy": {
+        "frames": 13,
+        "startup": 10,
+        "active": 6,
+        "recovery": 12,
+        "hitbox": {
+            "width_multiplier": 1.5,
+            "height_multiplier": 0.5, 
+        },
+        "on_hit": {
+            "damage": 20,
+            "stun": 18,
+            "knockback": 18,
+        },
+        "on_block": {
+            "stun": 15,
+            "knockback": 12
+        },
+        "on_target_block": {
+            "stun": 15,
+            "knockback": 5
+        },
+    },
+    "hurt": {"frames": 8, "speed": 4},
+    "victory": {"frames": 27, "speed": 4},
+    "defeat": {"frames": 7, "speed": 10,},
+}
+
+vfx_animation_steps = { 
+    "standing_light_vfx": {
+        "frames": 8, 
+        "speed": 4, 
+        "x_offset": 40, 
+        "y_offset": 15,
+        "alpha": 100
+        },
+    "standing_heavy_vfx": {
+        "frames": 15, 
+        "speed": 4, 
+        "x_offset": 30, 
+        "y_offset": 0.5,
+        "alpha": 100
+        },
+    "crouching_light_vfx": {
+        "frames": 8, 
+        "speed": 4, 
+        "x_offset": 20, 
+        "y_offset": 1.0,
+        "alpha": 100
+        },
+    "crouching_heavy_vfx": {
+        "frames": 13, 
+        "speed": 4, 
+        "x_offset": 20, 
+        "y_offset": 10,
+        "alpha": 100
+        },
+    "block": {
+        "frames": 4, 
+        "speed": 4, 
+        "x_offset": 15, 
+        "y_offset": 30,
+        "alpha": 100
+        }
+}
+
+player2_animation_steps = player_animation_steps
+
+
 
 text = pygame.font.SysFont("Wide Latin", 31) #text font and size
 count_text = pygame.font.SysFont("Wide Latin", 100) #counter text
-
 crown_img = pygame.image.load("assets/image/round_crown.png").convert_alpha()
 bg_image = pygame.image.load("assets/image/destiny-islandss.jpg").convert_alpha()
 player_names = pygame.image.load("assets/image/player names.png").convert_alpha()
 player1_win = pygame.image.load("assets/image/player1 WINS.png")
 player2_win = pygame.image.load("assets/image/player2 WINS.png")
-play_img = pygame.image.load("assets/image/play_button.png")
-help_img = pygame.image.load("assets/image/help_button.png")
-back_img = pygame.image.load("assets/image/back_button.png")
-quit_img = pygame.image.load("assets/image/quit_button.png")
-leave_img = pygame.image.load("assets/image/leave_button.png")
-
-#button instances
-play_button = Button(0,0, play_img, 1)
-help_button = Button(0,0, help_img, 1)
-back_button = Button(0,0, back_img, 1)
-quit_button = Button(0,0, quit_img, 1)
-leave_button = Button(0,0, leave_img, 1)
-
 
 def draw_names():
     scaled_name = pygame.transform.scale(player_names, (SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -73,7 +203,7 @@ def draw_names():
 
 def draw_text():
     counter = count_text.render(str(intro_count-1), True, WHITE)
-    counter_postion = screen.blit(counter, (490, SCREEN_HEIGHT/4))
+    counter_postion = screen.blit(counter, (480, SCREEN_HEIGHT/4))
 
 def draw_bg():
     scaled_bg = pygame.transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -82,10 +212,12 @@ def draw_bg():
 def draw_crown1(x):
     scaled_crown = pygame.transform.scale(crown_img, (130, 100))
     round_count = screen.blit(scaled_crown, (x,20))
+
 def draw_crown2(x1, x2):
     scaled_crown = pygame.transform.scale(crown_img, (130, 100))
     round_count = screen.blit(scaled_crown, (x1, 20))
     round_count = screen.blit(scaled_crown, (x2, 20))   
+
 def draw_player_win(N):
     scaled_win1 = pygame.transform.scale(player1_win, (SCREEN_WIDTH, SCREEN_HEIGHT))
     scaled_win2 = pygame.transform.scale(player2_win, (SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -101,24 +233,21 @@ def draw_health_bar(health, x, y):
     pygame.draw.rect(screen, RED, (x, y, 400, 30))
     pygame.draw.rect(screen, YELLOW, (x, y, 400 * ratio, 30))
 
-#create 2 instances of fighters
-fighter_1 = Fighter(1, 200, 310, False, player1_data, player1_sheet, player1_animation_steps) #note that fighter class is 155 wide and 260 tall so +-155 on the x position
-fighter_2 = Fighter(2, 700, 310, True, player2_data, player2_sheet, player2_animation_steps)
+fighter_1 = Fighter(1, 200, 310, False, player1_data, player1_sheet, player_animation_steps, vfx_sheet, vfx_animation_steps) #note that fighter class is 155 wide and 260 tall so +-155 on the x position
+fighter_2 = Fighter(2, 700, 310, True, player2_data, player2_sheet, player2_animation_steps, vfx_sheet, vfx_animation_steps)
 
-#GAME LOOP
+vfx_group = pygame.sprite.Group()    
+    #GAME LOOP
 run = True
 while run:
-
+    
     clock.tick(FPS)
 
     draw_bg()
-
+    
     draw_health_bar(fighter_1.health, 20, 20) #width of hp is 400 from def draw_health_bar(health, x, y):
     draw_health_bar(fighter_2.health, 660, 20)
-    #player name text/image
-    draw_names()
 
-    #draws number of wins per round
     if score[0] == 1:
         draw_crown1(270)
     if score[0] == 2:
@@ -130,8 +259,8 @@ while run:
 
     if intro_count <= 1:
         #move fighters
-        fighter_1.move (SCREEN_WIDTH, screen, fighter_2, round_over)
-        fighter_2.move (SCREEN_WIDTH, screen, fighter_1, round_over)
+        fighter_1.move (SCREEN_WIDTH, screen, fighter_2, round_over, vfx_group)
+        fighter_2.move (SCREEN_WIDTH, screen, fighter_1, round_over, vfx_group)
 
     else:
         draw_text()
@@ -143,13 +272,20 @@ while run:
 
     pygame.draw.line(screen, WHITE, (SCREEN_WIDTH/2, 0), (SCREEN_WIDTH/2, 720), 1) #center line
 
+    #player name text/image
+    draw_names()
+
     #update fighters
     fighter_1.update(fighter_2)
     fighter_2.update(fighter_1)
+    # update vfx
+    vfx_group.update()
 
     fighter_1.draw(screen)
     fighter_2.draw(screen)
-    
+    # drawing vfx
+    vfx_group.draw(screen)
+
     if score [0] == 2:
         draw_player_win(1)
     elif score [1] == 2: 
@@ -169,9 +305,8 @@ while run:
             if pygame.time.get_ticks() - round_over_time > round_over_cooldown:
                 round_over = False
                 intro_count = 4
-                fighter_1 = Fighter(1, 200, 310, False, player1_data, player1_sheet, player1_animation_steps) 
-                fighter_2 = Fighter(2, 700, 310, True, player2_data, player2_sheet, player2_animation_steps)
-
+                fighter_1 = Fighter(1, 200, 310, False, player1_data, player1_sheet, player_animation_steps, vfx_sheet, vfx_animation_steps) #note that fighter class is 155 wide and 260 tall so +-155 on the x position
+                fighter_2 = Fighter(2, 700, 310, True, player2_data, player2_sheet, player2_animation_steps, vfx_sheet, vfx_animation_steps)
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
@@ -184,3 +319,4 @@ while run:
     pygame.display.update()
 
 pygame.quit()
+
