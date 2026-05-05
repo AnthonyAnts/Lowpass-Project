@@ -49,11 +49,11 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
         "active": 6, # remember, we're running at 60 fps so if you're counting sprites, divide 60 by the tally
         "recovery": 10,
         "hitbox": {
-            "width_multiplier": 1.0,
+            "width_multiplier": 1.3,
             "height_multiplier": 1.0,
         },
         "on_hit": {
-            "damage": 10,
+            "damage": 15,
             "stun": 12,
             "knockback": 12,
         },
@@ -70,15 +70,15 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
 
     "standing_heavy": {
         "frames": 13,
-        "startup": 2,
+        "startup": 4,
         "active": 4,
         "recovery": 30,
         "hitbox": {
-            "width_multiplier": 1.5,
+            "width_multiplier": 2.0,
             "height_multiplier": 1.0,
         },
         "on_hit": { 
-            "damage": 20,
+            "damage": 30,
             "stun": 20,
             "knockback": 20,
         }, 
@@ -88,7 +88,7 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
         },
         "on_target_block": {
             "stun": 30,
-            "knockback": 5
+            "knockback": 20
         },
     },
 
@@ -104,7 +104,7 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
             "height_multiplier": 1.0,
         },
         "on_hit": {
-            "damage": 5,
+            "damage": 10,
             "stun": 12,
             "knockback": 12,
         }, 
@@ -123,13 +123,13 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
         "frames": 13,
         "startup": 10,
         "active": 6,
-        "recovery": 12,
+        "recovery": 30,
         "hitbox": {
-            "width_multiplier": 1.5,
+            "width_multiplier": 2.0,
             "height_multiplier": 0.5, 
         },
         "on_hit": {
-            "damage": 20,
+            "damage": 30,
             "stun": 18,
             "knockback": 18,
         },
@@ -144,7 +144,7 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
     },
     "hurt": {"frames": 8, "speed": 4},
     "victory": {"frames": 27, "speed": 4},
-    "defeat": {"frames": 7, "speed": 10,},
+    "defeat": {"frames": 7, "speed": 20,},
 }
 
 vfx_animation_steps = { 
@@ -160,7 +160,7 @@ vfx_animation_steps = {
         "speed": 4, 
         "x_offset": 30, 
         "y_offset": 0.5,
-        "alpha": 100
+        "alpha": 155
         },
     "crouching_light_vfx": {
         "frames": 8, 
@@ -179,7 +179,7 @@ vfx_animation_steps = {
     "block": {
         "frames": 4, 
         "speed": 4, 
-        "x_offset": 15, 
+        "x_offset": 26, 
         "y_offset": 30,
         "alpha": 100
         }
@@ -268,9 +268,6 @@ while run:
         if(pygame.time.get_ticks() - last_count_update) >= 1000:
             intro_count -= 1
             last_count_update = pygame.time.get_ticks()
-    
-
-    pygame.draw.line(screen, WHITE, (SCREEN_WIDTH/2, 0), (SCREEN_WIDTH/2, 720), 1) #center line
 
     #player name text/image
     draw_names()
