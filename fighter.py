@@ -384,7 +384,7 @@ class Fighter():
                     target.apply_knockback(hit["knockback"], self.flip)
                     target.stun_on_hit(hit["stun"])
 
-                elif target.crouching and target.block and self.attack_type == "standing_heavy": # standing_heavy beats crouching block
+                elif (target.crouching or target.block) and self.attack_type == "standing_heavy": # standing_heavy beats crouching block
                     self.attack_landed = True # flag to set gatling on hit confirm
                     hit = self.attack_data["on_hit"]
                     target.hit = True
@@ -393,7 +393,40 @@ class Fighter():
                     target.apply_knockback(hit["knockback"], self.flip)
                     target.stun_on_hit(hit["stun"])
 
-                elif target.block:
+                elif target.block and target.crouching and not target.block:
+                    self.attack_landed = False # flag to set no gatling on block
+                    block = self.attack_data["on_block"]
+                    target_block = self.attack_data["on_target_block"]
+                    target.hit = False
+
+                    # apply target stun and knockback
+                    target.apply_knockback(block["knockback"], self.flip)
+                    target.stun_on_block(block["stun"])
+
+                    # apply self stun and knockback
+                    self.on_target_block(target_block["stun"])
+                    if self.flip:
+                        self.apply_knockback(target_block["knockback"], False)
+                    else:
+                        self.apply_knockback(target_block["knockback"], True)
+                    
+
+                    # player 1 block vfx
+                    x_offset = self.vfx_config["block"].get("x_offset", 0) * self.image_scale
+                    y_offset = self.vfx_config["block"].get("y_offset", 0) * self.image_scale
+
+                    if not self.flip:
+                        block_vfx_x = target.rect.left + x_offset
+                        block_vfx_flip = True
+                    else: # player 2
+                        block_vfx_x = target.rect.right - x_offset
+                        block_vfx_flip = False
+
+                    block_vfx_y = target.rect.centery - y_offset
+                    block_vfx = VFX(block_vfx_x, block_vfx_y, self.vfx_animations["block"], speed = 4, flip = block_vfx_flip)
+                    vfx_group.add(block_vfx)
+                
+                else:
                     self.attack_landed = False # flag to set no gatling on block
                     block = self.attack_data["on_block"]
                     target_block = self.attack_data["on_target_block"]
