@@ -170,6 +170,7 @@ class Fighter():
         if self.stun_timer == 0 and not self.attacking and self.alive and not round_over and self.hurt_timer == 0:
             if self.player == 1:
                 is_crouching = key[pygame.K_s]
+
                 j = key[pygame.K_j] and not self.prev_key[pygame.K_j]
                 k = key[pygame.K_k] and not self.prev_key[pygame.K_k]
 
@@ -229,13 +230,6 @@ class Fighter():
         self.stun_timer = duration
 
     def update(self, target):
-        # time check: 2:12 am
-        # i really love procedural programming
-
-        # defeat handling
-        # this is first so it overrides all functions when defeat is done
-        # this is to ensure inputs can't be overridden and to maintain
-        # consistency for animation drawing
         if not self.alive:
             if self.action != "defeat":
                 self.update_action("defeat") # once dead, frame_index = 0
@@ -254,9 +248,6 @@ class Fighter():
             self.frame_index = max(0, min(self.frame_index, len(anim) - 1)) # asymptotic
             self.image = anim[min(self.frame_index, len(anim) - 1)]
             return
-
-        # i hate doing this but i'm gonna comment and leave a section
-        # for every if/elif here
 
         # attacking
         if self.attacking:
@@ -333,7 +324,6 @@ class Fighter():
         self.frame_index = max(0, min(self.frame_index, len(current_anim_list) - 1))
         # reset animation
         self.image = self.animations[self.action][self.frame_index]
-        # i love procedural programming
 
         # debug
         # if self.player == 2:
@@ -386,11 +376,12 @@ class Fighter():
                 elif target.walking_back or target.block:
                     current_block = "high"
 
-                print(
+                #debugging
+                """print(
                     f"ATK: {self.attack_type} | "
                     f"Block:{target.block} WalkBack:{target.walking_back} Crouch:{target.crouching} "
                     f"=> CanBlock:{can_block}"
-                )
+                )"""
 
                 can_block = (current_block == required_block)
 
@@ -509,11 +500,9 @@ class VFX(pygame.sprite.Sprite):
         self.speed = speed
         self.counter = 0
         
-
         img = self.frames[self.frame_index]
         self.image = pygame.transform.flip(img, self.flip, False)
         self.rect = self.image.get_rect(center=(x,y))
-
 
     def update(self):
         # update animation
