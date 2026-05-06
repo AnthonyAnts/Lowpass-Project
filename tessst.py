@@ -45,9 +45,9 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
     "walk_back": {"frames": 10, "speed": 6},
     "standing_light": {
         "frames": 8,
-        "startup": 4, # To make it faster: lower startup and/or recovery. To make it slower, increase startup/recovery.
-        "active": 6, # remember, we're running at 60 fps so if you're counting sprites, divide 60 by the tally
-        "recovery": 10,
+        "startup": 3, # To make it faster: lower startup and/or recovery. To make it slower, increase startup/recovery.
+        "active": 3, # remember, we're running at 60 fps so if you're counting sprites, divide 60 by the tally
+        "recovery": 2,
         "hitbox": {
             "width_multiplier": 1.3,
             "height_multiplier": 1.0,
@@ -72,7 +72,7 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
         "frames": 13,
         "startup": 4,
         "active": 4,
-        "recovery": 30,
+        "recovery": 18,
         "hitbox": {
             "width_multiplier": 2.0,
             "height_multiplier": 1.0,
@@ -80,11 +80,11 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
         "on_hit": { 
             "damage": 30,
             "stun": 20,
-            "knockback": 20,
+            "knockback": 90,
         }, 
         "on_block": {
             "stun": 12,
-            "knockback": 15
+            "knockback": 20
         },
         "on_target_block": {
             "stun": 30,
@@ -96,9 +96,9 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
 
     "crouching_light": {
         "frames": 8,
-        "startup": 4,
-        "active": 4,
-        "recovery": 10,
+        "startup": 3,
+        "active": 3,
+        "recovery": 2,
         "hitbox": {
             "width_multiplier": 0.9,
             "height_multiplier": 1.0,
@@ -121,9 +121,9 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
 
     "crouching_heavy": {
         "frames": 13,
-        "startup": 10,
-        "active": 6,
-        "recovery": 30,
+        "startup": 4,
+        "active": 4,
+        "recovery": 20,
         "hitbox": {
             "width_multiplier": 2.0,
             "height_multiplier": 0.5, 
@@ -131,7 +131,7 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
         "on_hit": {
             "damage": 30,
             "stun": 18,
-            "knockback": 18,
+            "knockback": 100,
         },
         "on_block": {
             "stun": 15,
@@ -153,28 +153,28 @@ vfx_animation_steps = {
         "speed": 4, 
         "x_offset": 40, 
         "y_offset": 15,
-        "alpha": 100
+        "alpha": 150
         },
     "standing_heavy_vfx": {
         "frames": 15, 
         "speed": 4, 
         "x_offset": 30, 
         "y_offset": 0.5,
-        "alpha": 155
+        "alpha": 200
         },
     "crouching_light_vfx": {
         "frames": 8, 
         "speed": 4, 
-        "x_offset": 20, 
+        "x_offset": 27, 
         "y_offset": 1.0,
-        "alpha": 100
+        "alpha": 200
         },
     "crouching_heavy_vfx": {
         "frames": 13, 
         "speed": 4, 
         "x_offset": 20, 
         "y_offset": 10,
-        "alpha": 100
+        "alpha": 150
         },
     "block": {
         "frames": 4, 
@@ -203,7 +203,7 @@ def draw_names():
 
 def draw_text():
     counter = count_text.render(str(intro_count-1), True, WHITE)
-    counter_postion = screen.blit(counter, (480, SCREEN_HEIGHT/4))
+    counter_postion = screen.blit(counter, (500, SCREEN_HEIGHT/4))
 
 def draw_bg():
     scaled_bg = pygame.transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
