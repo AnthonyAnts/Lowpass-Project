@@ -1,5 +1,6 @@
 import pygame
 from fighter import Fighter
+from button import Button
 
 pygame.init()
 
@@ -15,6 +16,9 @@ FPS = 60
 RED = (255, 0, 0)
 YELLOW = (255, 235, 0)
 WHITE = (255, 255, 255)
+
+#define game state variables
+game_paused = False
 
 #define game variables
 intro_count = 4
@@ -39,6 +43,19 @@ player1_sheet = pygame.image.load("assets/sprites/sora sprite sheet.png")
 player2_sheet = pygame.image.load("assets/sprites/sora sprite sheet_2.png")
 vfx_sheet = pygame.image.load("assets/sprites/vfx sprite sheet.png").convert_alpha()
 
+#load images
+text = pygame.font.SysFont("Wide Latin", 31) #text font and size
+count_text = pygame.font.SysFont("Wide Latin", 100) #counter text
+crown_img = pygame.image.load("assets/image/round_crown.png").convert_alpha()
+bg_image = pygame.image.load("assets/image/destiny-islandss.jpg").convert_alpha()
+player_names = pygame.image.load("assets/image/player names.png").convert_alpha()
+player1_win = pygame.image.load("assets/image/player1 WINS.png")
+player2_win = pygame.image.load("assets/image/player2 WINS.png")
+resume_img = pygame.image.load("assets/image/play_button.png").convert_alpha()
+
+#create button instance
+resume_button = Button(0, 0, resume_img, 1)
+
 player_animation_steps = { # lower speed value = faster, higher speed value = slower, how it works: frame division, 60 frames/2 = 30, runs at 30 fps
     "idle": {"frames": 19, "speed": 4},
     "walk": {"frames": 8, "speed": 3},
@@ -54,23 +71,23 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
         },
         "on_hit": {
             "damage": 15,
-            "stun": 12,
-            "knockback": 12,
+            "stun": 13,
+            "knockback": 90,
         },
         "on_block": {
             "stun": 5,
-            "knockback": 10
+            "knockback": 50
         },
         "on_target_block": {
             "stun": 10,
-            "knockback": 20
+            "knockback": 50
         },
         "gatling": ["standing_heavy", "crouching_heavy"],
     },
 
     "standing_heavy": {
-        "frames": 13,
-        "startup": 4,
+        "frames": 15,
+        "startup": 6,
         "active": 4,
         "recovery": 18,
         "hitbox": {
@@ -80,15 +97,15 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
         "on_hit": { 
             "damage": 30,
             "stun": 20,
-            "knockback": 90,
+            "knockback": 100,
         }, 
         "on_block": {
             "stun": 12,
-            "knockback": 30
+            "knockback": 50
         },
         "on_target_block": {
             "stun": 30,
-            "knockback": 30
+            "knockback": 50
         },
     },
 
@@ -98,7 +115,7 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
         "frames": 8,
         "startup": 3,
         "active": 3,
-        "recovery": 2,
+        "recovery": 3,
         "hitbox": {
             "width_multiplier": 0.9,
             "height_multiplier": 1.0,
@@ -106,15 +123,15 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
         "on_hit": {
             "damage": 10,
             "stun": 12,
-            "knockback": 12,
+            "knockback": 90,
         }, 
         "on_block": {
             "stun": 10,
-            "knockback": 10
+            "knockback": 50
         }, 
         "on_target_block": {
             "stun": 10,
-            "knockback": 20
+            "knockback": 50
         },
         "gatling": ["standing_heavy", "crouching_heavy"],
     },
@@ -135,11 +152,11 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
         },
         "on_block": {
             "stun": 15,
-            "knockback": 40
+            "knockback": 50
         },
         "on_target_block": {
             "stun": 15,
-            "knockback": 30
+            "knockback": 50
         },
     },
     "hurt": {"frames": 8, "speed": 4},
@@ -156,16 +173,16 @@ vfx_animation_steps = {
         "alpha": 150
         },
     "standing_heavy_vfx": {
-        "frames": 15, 
+        "frames": 16, 
         "speed": 4, 
-        "x_offset": 40, 
+        "x_offset": 26, 
         "y_offset": 0.5,
-        "alpha": 200
+        "alpha": 225
         },
     "crouching_light_vfx": {
         "frames": 8, 
         "speed": 4, 
-        "x_offset": 27, 
+        "x_offset": 20, 
         "y_offset": 1.0,
         "alpha": 200
         },
@@ -187,15 +204,6 @@ vfx_animation_steps = {
 
 player2_animation_steps = player_animation_steps
 
-
-
-text = pygame.font.SysFont("Wide Latin", 31) #text font and size
-count_text = pygame.font.SysFont("Wide Latin", 100) #counter text
-crown_img = pygame.image.load("assets/image/round_crown.png").convert_alpha()
-bg_image = pygame.image.load("assets/image/destiny-islandss.jpg").convert_alpha()
-player_names = pygame.image.load("assets/image/player names.png").convert_alpha()
-player1_win = pygame.image.load("assets/image/player1 WINS.png")
-player2_win = pygame.image.load("assets/image/player2 WINS.png")
 
 def draw_names():
     scaled_name = pygame.transform.scale(player_names, (SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -240,7 +248,6 @@ vfx_group = pygame.sprite.Group()
     #GAME LOOP
 run = True
 while run:
-    
     clock.tick(FPS)
 
     draw_bg()
@@ -307,8 +314,7 @@ while run:
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-
-                pass #pause event here
+                game_paused = True
             
         if event.type == pygame.QUIT:
             run = False
