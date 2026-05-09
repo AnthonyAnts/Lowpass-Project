@@ -41,7 +41,7 @@ vfx_sheet = pygame.image.load("assets/sprites/vfx sprite sheet.png").convert_alp
 
 player_animation_steps = { # lower speed value = faster, higher speed value = slower, how it works: frame division, 60 frames/2 = 30, runs at 30 fps
     "idle": {"frames": 19, "speed": 4},
-    "walk": {"frames": 8, "speed": 8},
+    "walk": {"frames": 8, "speed": 3},
     "walk_back": {"frames": 10, "speed": 6},
     "standing_light": {
         "frames": 8,
@@ -63,7 +63,7 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
         },
         "on_target_block": {
             "stun": 10,
-            "knockback": 10
+            "knockback": 20
         },
         "gatling": ["standing_heavy", "crouching_heavy"],
     },
@@ -84,11 +84,11 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
         }, 
         "on_block": {
             "stun": 12,
-            "knockback": 20
+            "knockback": 30
         },
         "on_target_block": {
             "stun": 30,
-            "knockback": 20
+            "knockback": 30
         },
     },
 
@@ -114,7 +114,7 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
         }, 
         "on_target_block": {
             "stun": 10,
-            "knockback": 5
+            "knockback": 20
         },
         "gatling": ["standing_heavy", "crouching_heavy"],
     },
@@ -126,7 +126,7 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
         "recovery": 20,
         "hitbox": {
             "width_multiplier": 2.0,
-            "height_multiplier": 0.5, 
+            "height_multiplier": 1, 
         },
         "on_hit": {
             "damage": 30,
@@ -135,11 +135,11 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
         },
         "on_block": {
             "stun": 15,
-            "knockback": 12
+            "knockback": 40
         },
         "on_target_block": {
             "stun": 15,
-            "knockback": 5
+            "knockback": 30
         },
     },
     "hurt": {"frames": 8, "speed": 4},
@@ -158,7 +158,7 @@ vfx_animation_steps = {
     "standing_heavy_vfx": {
         "frames": 15, 
         "speed": 4, 
-        "x_offset": 30, 
+        "x_offset": 40, 
         "y_offset": 0.5,
         "alpha": 200
         },
