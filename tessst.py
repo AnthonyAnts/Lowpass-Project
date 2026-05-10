@@ -61,38 +61,38 @@ p2_controls = {
 
 player_animation_steps = { # lower speed value = faster, higher speed value = slower, how it works: frame division, 60 frames/2 = 30, runs at 30 fps
     "idle": {"frames": 19, "speed": 4},
-    "walk": {"frames": 8, "speed": 8},
+    "walk": {"frames": 8, "speed": 3},
     "walk_back": {"frames": 10, "speed": 6},
     "standing_light": {
         "frames": 8,
-        "startup": 4, # To make it faster: lower startup and/or recovery. To make it slower, increase startup/recovery.
-        "active": 6, # remember, we're running at 60 fps so if you're counting sprites, divide 60 by the tally
-        "recovery": 10,
+        "startup": 3, # To make it faster: lower startup and/or recovery. To make it slower, increase startup/recovery.
+        "active": 3, # remember, we're running at 60 fps so if you're counting sprites, divide 60 by the tally
+        "recovery": 2,
         "hitbox": {
             "width_multiplier": 1.3,
             "height_multiplier": 1.0,
         },
         "on_hit": {
-            "damage": 100,
-            "stun": 12,
-            "knockback": 12,
+            "damage": 15,
+            "stun": 13,
+            "knockback": 90,
         },
         "on_block": {
             "stun": 5,
-            "knockback": 10
+            "knockback": 50
         },
         "on_target_block": {
             "stun": 10,
-            "knockback": 10
+            "knockback": 50
         },
         "gatling": ["standing_heavy", "crouching_heavy"],
     },
 
     "standing_heavy": {
-        "frames": 13,
-        "startup": 4,
+        "frames": 15,
+        "startup": 6,
         "active": 4,
-        "recovery": 30,
+        "recovery": 18,
         "hitbox": {
             "width_multiplier": 2.0,
             "height_multiplier": 1.0,
@@ -100,15 +100,15 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
         "on_hit": { 
             "damage": 30,
             "stun": 20,
-            "knockback": 20,
+            "knockback": 100,
         }, 
         "on_block": {
             "stun": 12,
-            "knockback": 15
+            "knockback": 50
         },
         "on_target_block": {
             "stun": 30,
-            "knockback": 20
+            "knockback": 50
         },
     },
 
@@ -116,9 +116,9 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
 
     "crouching_light": {
         "frames": 8,
-        "startup": 4,
-        "active": 4,
-        "recovery": 10,
+        "startup": 3,
+        "active": 3,
+        "recovery": 3,
         "hitbox": {
             "width_multiplier": 0.9,
             "height_multiplier": 1.0,
@@ -126,40 +126,40 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
         "on_hit": {
             "damage": 10,
             "stun": 12,
-            "knockback": 12,
+            "knockback": 90,
         }, 
         "on_block": {
             "stun": 10,
-            "knockback": 10
+            "knockback": 50
         }, 
         "on_target_block": {
             "stun": 10,
-            "knockback": 5
+            "knockback": 50
         },
         "gatling": ["standing_heavy", "crouching_heavy"],
     },
 
     "crouching_heavy": {
         "frames": 13,
-        "startup": 10,
-        "active": 6,
-        "recovery": 12,
+        "startup": 4,
+        "active": 4,
+        "recovery": 20,
         "hitbox": {
             "width_multiplier": 2.0,
-            "height_multiplier": 0.5, 
+            "height_multiplier": 1, 
         },
         "on_hit": {
             "damage": 30,
             "stun": 18,
-            "knockback": 18,
+            "knockback": 100,
         },
         "on_block": {
             "stun": 15,
-            "knockback": 12
+            "knockback": 50
         },
         "on_target_block": {
             "stun": 15,
-            "knockback": 5
+            "knockback": 50
         },
     },
     "hurt": {"frames": 8, "speed": 4},
@@ -173,28 +173,28 @@ vfx_animation_steps = {
         "speed": 4, 
         "x_offset": 40, 
         "y_offset": 15,
-        "alpha": 100
+        "alpha": 150
         },
     "standing_heavy_vfx": {
-        "frames": 15, 
+        "frames": 16, 
         "speed": 4, 
-        "x_offset": 30, 
+        "x_offset": 26, 
         "y_offset": 0.5,
-        "alpha": 155
+        "alpha": 225
         },
     "crouching_light_vfx": {
         "frames": 8, 
         "speed": 4, 
         "x_offset": 20, 
         "y_offset": 1.0,
-        "alpha": 100
+        "alpha": 200
         },
     "crouching_heavy_vfx": {
         "frames": 13, 
         "speed": 4, 
         "x_offset": 20, 
         "y_offset": 10,
-        "alpha": 100
+        "alpha": 150
         },
     "block": {
         "frames": 4, 
@@ -339,7 +339,6 @@ while run:
     if GAME_STATE == STATE_MENU:
         draw_bg(screen)
         draw_menu(screen)
-        print(click_cooldown)
         if play_button.draw(screen):
             fighter_1, fighter_2, vfx_group = reset_round()
             score = [0,0]
