@@ -207,7 +207,6 @@ vfx_animation_steps = {
 
 player2_animation_steps = player_animation_steps
 
-
 menu_font = pygame.font.SysFont("Wide Latin", 60)
 text = pygame.font.SysFont("Wide Latin", 31) #text font and size
 count_text = pygame.font.SysFont("Wide Latin", 100) #counter text
@@ -230,7 +229,42 @@ resume_button = Button(0, 0, resume_img, 1, hitbox = (350, 110, 380, 80))
 quit_button = Button(0, 0, quit_img, 1, hitbox = (350, 420, 380, 80))
 rematch_button = Button(0, 0, rematch_img, 1, hitbox = (350, 270, 380, 80))
 
+pygame.mixer.music.load("assets/sound/Cavern of Remembrance.mp3")
+standing_light_sfx = pygame.mixer.Sound("assets/sound/attack/light attack/se02001#18.wav")
+standing_heavy_sfx = pygame.mixer.Sound("assets/sound/attack/heavy attack/se02001#07.wav")
+crouching_light_sfx = pygame.mixer.Sound("assets/sound/attack/light attack/se02001#19.wav")
+crouching_heavy_sfx = pygame.mixer.Sound("assets/sound/attack/heavy attack/se02001#04.wav")
+hurt_sfx = pygame.mixer.Sound("assets/sound/hurt/Battle-Sora#028.wav")
+victory_sfx = pygame.mixer.Sound("assets/sound/victory/fd_po_chat_sora_random6_000.wav")
+light_hit_sfx = pygame.mixer.Sound("assets/sound/hit collide/se02001#11.wav")
+heavy_hit_sfx = pygame.mixer.Sound("assets/sound/hit collide/se02001#15.wav")
+block_sfx = pygame.mixer.Sound("assets/sound/block/se00001_032.wav")
+
+pygame.mixer.music.set_volume(0.20)
+standing_light_sfx.set_volume(0.5)
+standing_heavy_sfx.set_volume(0.5)
+crouching_light_sfx.set_volume(0.5)
+crouching_heavy_sfx.set_volume(0.5)
+hurt_sfx.set_volume(0.5)
+victory_sfx.set_volume(0.5)
+light_hit_sfx.set_volume(0.5)
+heavy_hit_sfx.set_volume(0.5)
+block_sfx.set_volume(0.199)
+
+sounds = {
+    "standing_light": standing_light_sfx,
+    "standing_heavy": standing_heavy_sfx,
+    "crouching_light": crouching_light_sfx,
+    "crouching_heavy": crouching_heavy_sfx,
+    "light_hit_sfx": light_hit_sfx,
+    "heavy_hit_sfx": heavy_hit_sfx,
+    "hurt": hurt_sfx,
+    "victory": victory_sfx,
+    "block": block_sfx
+}
+
 bg_image = pygame.image.load("assets/image/destiny-islandss.jpg").convert_alpha()
+menu_bg = pygame.image.load("assets/image/menu_bg.png").convert_alpha()
 player_names = pygame.image.load("assets/image/player names.png").convert_alpha()
 player1_win = pygame.image.load("assets/image/player1 WINS.png")
 player2_win = pygame.image.load("assets/image/player2 WINS.png")
@@ -260,6 +294,9 @@ def draw_game_over(surface, winner):
 
 def draw_bg(surface):
     surface.blit(pygame.transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT)), (0,0))
+
+def draw_menu_bg(surface):
+    surface.blit(pygame.transform.scale(menu_bg, (SCREEN_WIDTH, SCREEN_HEIGHT)), (0,0))
 
 def draw_names(surface):
     surface.blit(pygame.transform.scale(player_names, (SCREEN_WIDTH, SCREEN_HEIGHT)), (3, -16))
@@ -295,8 +332,8 @@ def draw_streaks(surface):
 
 
 def reset_round():
-    f1 = Fighter(1, 200, 310, False, player1_data, player1_sheet, player_animation_steps, vfx_sheet, vfx_animation_steps, p1_controls)
-    f2 = Fighter(2, 700, 310, True, player2_data, player2_sheet, player2_animation_steps, vfx_sheet, vfx_animation_steps, p2_controls)
+    f1 = Fighter(1, 200, 310, False, player1_data, player1_sheet, player_animation_steps, vfx_sheet, vfx_animation_steps, p1_controls, sounds)
+    f2 = Fighter(2, 700, 310, True, player2_data, player2_sheet, player2_animation_steps, vfx_sheet, vfx_animation_steps, p2_controls, sounds)
     return f1, f2, pygame.sprite.Group()
 
 score = [0, 0]
@@ -305,7 +342,7 @@ last_count_update = pygame.time.get_ticks()
 round_over = False
 round_over_cooldown = 2000
 click_cooldown = 0
-
+pygame.mixer.music.play(-1, 0.0, 5000)
 fighter_1, fighter_2, vfx_group = reset_round()
 
 run = True
@@ -337,12 +374,16 @@ while run:
 
     # MENU
     if GAME_STATE == STATE_MENU:
-        draw_bg(screen)
+        draw_menu_bg(screen)
         draw_menu(screen)
         if play_button.draw(screen):
             fighter_1, fighter_2, vfx_group = reset_round()
             score = [0,0]
             into_count = 3
+            pygame.mixer.music.stop()
+            pygame.mixer.music.unload()
+            pygame.mixer.music.load("assets\sound\Kingdom Hearts 1.5 OST Destiny Islands Battle Theme ( Bustin' Up on the Beach ).mp3")
+            pygame.mixer.music.play(-1, 0.0, 5000)
             GAME_STATE = STATE_RUN
 
         if help_button.draw(screen):
@@ -440,12 +481,18 @@ while run:
                 GAME_STATE = STATE_HELP
 
             if leave_button.draw(screen):
+                pygame.mixer.music.stop()
+                pygame.mixer.music.unload()
+                pygame.mixer.music.load("assets\sound\Cavern of Remembrance.mp3")
+                pygame.mixer.music.play(-1, 0.0, 5000)
                 GAME_STATE = STATE_MENU
                 click_cooldown = 20
     
     # game over
     elif GAME_STATE == STATE_GAME_OVER:
         draw_bg(screen)
+        pygame.mixer.music.stop()
+        pygame.mixer.music.unload()
 
         fighter_1.draw(screen)
         fighter_2.draw(screen)
@@ -458,9 +505,15 @@ while run:
             score = [0, 0]
             intro_count = 3
             round_over = False
+            pygame.mixer.music.stop()
+            pygame.mixer.music.unload()
+            pygame.mixer.music.load("assets\sound\Kingdom Hearts 1.5 OST Destiny Islands Battle Theme ( Bustin' Up on the Beach ).mp3")
+            pygame.mixer.music.play(-1, 0.0, 5000)
             GAME_STATE = STATE_RUN
 
         if leave_button.draw(screen):
+            pygame.mixer.music.load("assets\sound\Cavern of Remembrance.mp3")
+            pygame.mixer.music.play(-1, 0.0, 5000)
             GAME_STATE = STATE_MENU
             click_cooldown = 20
 
