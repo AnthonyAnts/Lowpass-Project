@@ -1,12 +1,16 @@
 import pygame
 
 class Fighter():
-    def __init__(self, player, x, y, flip, data, sprite_sheet, animation_steps, vfx_sheet, vfx_animation_steps):
+    def __init__(self, player, x, y, flip, data, sprite_sheet, animation_steps, vfx_sheet, vfx_animation_steps, controls, sounds):
         self.player = player
         self.size = data[0]
         self.image_scale = data[1]
         self.offset = data[2]
         self.flip = flip
+        self.controls = controls
+        self.sounds = sounds
+
+        # animations
         self.animation_data = animation_steps
         self.animations = self.load_images(sprite_sheet, animation_steps)
         self.vfx_animations = self.load_vfx(vfx_sheet, vfx_animation_steps)
@@ -20,13 +24,11 @@ class Fighter():
             "crouching_heavy": animation_steps["crouching_heavy"],
         }
 
+        # states
         self.action = "idle"
         self.frame_index = 0
         self.image = self.animations[self.action][self.frame_index]
-
-        self.rect = pygame.Rect((x, y, 155, 260))
-
-        # states
+        self.rect = pygame.Rect(x, y, 155, 260) # hurtbox
         self.walking = False
         self.walking_back = False
         self.block_type = None #blocking high or low
@@ -40,21 +42,16 @@ class Fighter():
         self.alive = True
         self.block = False
         self.victory = False
+        self.sound_played = False
 
-        # hitstop
+        # attacks
         self.hitstop = 0
-
-        # knockback
+        self.stun_timer = 0
         self.knockback_dx = 0
         self.knockback_cooldown = 0
-
-        # stun
-        self.stun_timer = 0
-
-        # attack system
+        self.attack_data = {}
         self.attack_timer = 0
         self.attack_state = None
-        self.attack_data = {}
         self.attack_landed = False
 
         # animation timing
@@ -111,7 +108,7 @@ class Fighter():
 
         return animations
 
-    def move(self, screen_width, surface, target, round_over, vfx_group):
+    def move(self, screen_width, target, round_over, vfx_group):
         SPEED = 15
         dx = 0
 
@@ -125,15 +122,6 @@ class Fighter():
         # face opponent
         self.flip = target.rect.centerx < self.rect.centerx
 
-        # block
-        if not self.attacking and self.alive and not round_over and not self.victory and self.hurt_timer == 0:
-            if self.player == 1:
-                self.block = (self.flip and key[pygame.K_d]) or (not self.flip and key[pygame.K_a])
-            else:
-                self.block = (self.flip and key[pygame.K_RIGHT]) or (not self.flip and key[pygame.K_LEFT])
-        else:
-            self.block = False
-
         # knockback
         if self.knockback_cooldown > 0:
             self.knockback_cooldown -= 1
@@ -142,76 +130,50 @@ class Fighter():
         # stun
         if self.stun_timer > 0:
             self.stun_timer -= 1
+        
+        c_left = key[self.controls['left']]
+        c_right = key[self.controls['right']]
+        c_down = key[self.controls['down']]
 
-        if self.stun_timer == 0 and not self.attacking and self.alive and not round_over and self.hurt_timer == 0:
-            if self.player == 1:
-                if key[pygame.K_a]:
-                    dx = -SPEED + 10 # walking back speed should be slower
-                    self.walking_back = True
-                if key[pygame.K_d]:
-                    dx = SPEED
-                    self.walking = True
-                if key[pygame.K_s]:
-                    dx = 0
-                    self.crouching = True
-            
-            else: # player 2 move input
-                if key[pygame.K_LEFT]:
-                    dx = -SPEED
-                    self.walking = True
-                if key[pygame.K_RIGHT]:
-                    dx = SPEED - 10 # walking back speed should be slower
-                    self.walking_back = True
-                if key[pygame.K_DOWN]:
-                    dx = 0
-                    self.crouching = True
- 
-        # attack inputs
-        if self.stun_timer == 0 and not self.attacking and self.alive and not round_over and self.hurt_timer == 0:
-            if self.player == 1:
-                is_crouching = key[pygame.K_s]
+        btn_light = key[self.controls['light']] and not self.prev_key[self.controls['light']]
+        btn_heavy = key[self.controls['heavy']] and not self.prev_key[self.controls['heavy']]
 
-                j = key[pygame.K_j] and not self.prev_key[pygame.K_j]
-                k = key[pygame.K_k] and not self.prev_key[pygame.K_k]
+        can_act = self.stun_timer == 0 and not self.attacking and self.alive and not round_over and self.hurt_timer == 0
+        
+        # movement and attacks
+        if can_act:
+            self.block = (self.flip and c_right) or (not self.flip and c_left)
 
-                if j and is_crouching:
-                    self.start_attack("crouching_light")
-                elif k and is_crouching:
-                    self.start_attack("crouching_heavy")
-                elif j:
-                    self.start_attack("standing_light")
-                elif k:
-                    self.start_attack("standing_heavy")
-
-            else: #player 2 attack input
-                is_crouching = key[pygame.K_DOWN]
-                j = key[pygame.K_KP_2] and not self.prev_key[pygame.K_KP_2]
-                k = key[pygame.K_KP_3] and not self.prev_key[pygame.K_KP_3]
-
-                if j and is_crouching:
-                    self.start_attack("crouching_light")
-                elif k and is_crouching:
-                    self.start_attack("crouching_heavy")
-                elif j:
-                    self.start_attack("standing_light")
-                elif k:
-                    self.start_attack("standing_heavy")
+            if c_down: self.crouching = True
+            elif c_left: 
+                self.walking_back = not self.flip
+                self.walking = self.flip
+                dx = (-SPEED + 10) if self.walking_back else -SPEED
+            elif c_right: 
+                self.walking_back = self.flip
+                self.walking = not self.flip 
+                dx = (SPEED - 10) if self.walking_back else SPEED
+        
+    
+            if btn_light and self.crouching:
+                self.start_attack("crouching_light")
+            elif btn_heavy and self.crouching: 
+                self.start_attack("crouching_heavy")
+            elif btn_light:
+                self.start_attack("standing_light")
+            elif btn_heavy:
+                self.start_attack("standing_heavy")
 
         # screen bounds
-        if self.rect.left + dx < 0:
-            dx = -self.rect.left
-        if self.rect.right + dx > screen_width:
-            dx = screen_width - self.rect.right
+        if self.rect.left + dx < 0: dx = -self.rect.left
+        if self.rect.right + dx > screen_width: dx = screen_width - self.rect.right
 
-        # collision
-        if self.rect.move(dx, 0).colliderect(target.rect): # makes sure no overlap
-            dx = 0
+        # collision, makes sure no overlap
+        if self.rect.move(dx, 0).colliderect(target.rect): dx = 0
 
-        if self.attack_cooldown > 0:
-            self.attack_cooldown -= 1
+        if self.attack_cooldown > 0: self.attack_cooldown -= 1
 
-        self.attack(target, surface, vfx_group)
-
+        self.attack(target, vfx_group)
         self.rect.x += dx
         self.prev_key = key
 
@@ -220,20 +182,22 @@ class Fighter():
         self.knockback_dx = direction * (amount / 5)
         self.knockback_cooldown = 5
 
-    def stun_on_hit(self, duration):
-        self.stun_timer = duration
-
-    def stun_on_block(self, duration):
-        self.stun_timer = duration
-
-    def on_target_block(self, duration):
-        self.stun_timer = duration
+    def stun_on_hit(self, duration): self.stun_timer = duration
+    def stun_on_block(self, duration): self.stun_timer = duration
+    def on_target_block(self, duration): self.stun_timer = duration
 
     def update(self, target):
+        if self.health <= 0:
+            self.alive = False
+
+        # defeat state overrides everything
         if not self.alive:
             if self.action != "defeat":
                 self.update_action("defeat") # once dead, frame_index = 0
                 self.stun_timer = 5 # very lazy way to stop player from pressing any buttons once defeated
+                if not self.sound_played:
+                    self.sounds["hurt"].play()
+                    self.sounds["victory"].play()
             
             anim = self.animations["defeat"]
             self.anim_counter += 1
@@ -244,7 +208,8 @@ class Fighter():
                 if self.frame_index < len(anim) - 1:
                     self.frame_index += 1
                 self.anim_counter = 0
-            
+        
+
             self.frame_index = max(0, min(self.frame_index, len(anim) - 1)) # asymptotic
             self.image = anim[min(self.frame_index, len(anim) - 1)]
             return
@@ -252,8 +217,21 @@ class Fighter():
         # attacking
         if self.attacking:
             self.update_action(self.attack_type)
-        
-        # # hitstop
+            if not self.sound_played:
+                if self.attack_type == "standing_light":
+                    self.sounds["standing_light"].play()
+
+                elif self.attack_type == "standing_heavy":
+                    self.sounds["standing_heavy"].play()
+                    
+                elif self.attack_type == "crouching_light":
+                    self.sounds["crouching_light"].play()
+                    
+                elif self.attack_type == "crouching_heavy":
+                    self.sounds["crouching_heavy"].play()
+                    
+                self.sound_played = True
+        # hitstop
         elif self.hitstop > 0:
             self.hitstop -= 1
             return
@@ -263,99 +241,85 @@ class Fighter():
             self.hurt_timer -= 1
             self.hit = True
             self.update_action("hurt")
+            if not self.sound_played:
+                if target.attack_type == "standing_light" or target.attack_type == "crouching_light":
+                    self.sounds["light_hit_sfx"].play()
+                    self.sounds["hurt"].play()
+
+                elif target.attack_type == "standing_heavy" or target.attack_type == "crouching_heavy":
+                    self.sounds["heavy_hit_sfx"].play()
+                    self.sounds["hurt"].play()
+
+                self.sound_played = True
 
         # blocking
-        elif self.block: 
-            if self.walking_back and not self.crouching:
-                self.update_action("walk_back") # temporarily using walk_back until proper block sprite is added
-            elif self.crouching:
-                self.update_action("crouch")
-        
+        elif self.block and (self.walking_back or self.crouching): 
+            self.update_action("crouch" if self.crouching else "walk_back")
+
         # idle
         else:
-            if self.health <= 0:
-                self.alive = False
-            elif target.health <= 0:
+            if target.health <= 0:
                 self.victory = True
                 self.update_action("victory")
-            elif self.hurt_timer > 0:
-                self.update_action("hurt")
-            elif self.alive: # just in case:
-                if self.walking:
-                    self.update_action("walk")
-                elif self.walking_back:
-                    self.update_action("walk_back")
-                    # self.block
-                elif self.crouching:
-                    self.update_action("crouch")
-                    # self.block
-                else:
-                    self.update_action("idle")
+
+            elif self.walking:
+                self.update_action("walk")
+
+            elif self.walking_back:
+                self.update_action("walk_back")
+
+            elif self.crouching:
+                self.update_action("crouch")
+
+            else:
+                self.update_action("idle")
 
         # for attack animations getting attack frames for
         # frame indexing and hitbox timing
         if self.attacking:
             total_frames = len(self.animations[self.action])
-            total_attack_frames = (
-                self.attack_data["startup"] +
-                self.attack_data["active"] +
-                self.attack_data["recovery"]
-            )
+            total_attack_frames = (self.attack_data["startup"] + self.attack_data["active"] + self.attack_data["recovery"])
             # Out of Index Error Handling
             progress = min(self.attack_timer / max(1, total_attack_frames), 1) # to make sure it doesn't crash - some values may be out of index, therefore we squash them into a range of 0-1
             self.frame_index = int(progress * (total_frames - 1))
 
         else:
             # normal animations (idle, walk, etc.)
-            anim_speed = self.animation_data[self.action].get("speed", 4)
             self.anim_counter += 1
-            if self.anim_counter >= anim_speed:
+            if self.anim_counter >= self.animation_data[self.action].get("speed", 4):
                 self.frame_index += 1
                 self.anim_counter = 0
 
             if self.frame_index >= len(self.animations[self.action]):
-                if self.action == "victory":
-                    self.frame_index = len(self.animations[self.action]) - 1
-                else:
-                    self.frame_index = 0
+                self.frame_index = len(self.animations[self.action]) - 1 if self.action == "victory" else 0
         
-        current_anim_list = self.animations[self.action]
         # Out of Index Error Handling
-        self.frame_index = max(0, min(self.frame_index, len(current_anim_list) - 1))
+        self.frame_index = max(0, min(self.frame_index, len(self.animations[self.action]) - 1))
         # reset animation
         self.image = self.animations[self.action][self.frame_index]
+        # i love procedural programming
 
         # debug
         # if self.player == 2:
             # print(f"Victory: {self.victory} | State: {self.alive} | Action: {self.action} | Blocking: {self.block} | WalkBack: {self.walking_back}")
             # print(f"Stun: {self.stun_timer} | Target Stun: {target.stun_timer}")
         
-    def attack(self, target, surface, vfx_group):
-        if not self.attacking:
-            return
+    def attack(self, target, vfx_group):
+        if not self.attacking: return
 
         self.attack_timer += 1
-
         startup = self.attack_data["startup"]
         active = self.attack_data["active"]
         recovery = self.attack_data["recovery"]
         hitbox = self.attack_data.get("hitbox")
+        total_duration = startup + active + recovery
 
-        if self.attack_timer <= startup:
-            return
-
-        elif self.attack_timer <= startup + active:
-            if not hitbox or self.attack_landed:
-                return
+        if startup < self.attack_timer <= startup + active:
+            if not hitbox or self.attack_landed: return
 
             width = self.rect.width * hitbox["width_multiplier"]
             height = self.rect.height * hitbox["height_multiplier"]
-
-            if self.flip:
-                x = self.rect.centerx - self.rect.width * 0.5 - width
-            else:
-                x = self.rect.centerx + self.rect.width * 0.5
-
+            x = self.rect.centerx - self.rect.width * 0.5 - width if self.flip else self.rect.centerx + self.rect.width * 0.5
             y = self.rect.y
             attacking_rect = pygame.Rect(x, y, width, height)
 
@@ -365,73 +329,59 @@ class Fighter():
             if attacking_rect.colliderect(target.rect):
                 self.hitstop = 2 # hitstop is for animations to make them look cooler
                 target.hitstop = 4
-                can_block = False
                 
                 is_low = "crouching" in self.attack_type
-                required_block = "low" if is_low else "high"
-                current_block = None
+                is_overhead = self.attack_type == "standing_heavy"
+                can_block = False
 
-                if target.crouching:
-                    current_block = "low"
-                elif target.walking_back or target.block:
-                    current_block = "high"
+                if target.block:
+                    if self.attack_type == "standing_heavy":
+                        can_block = not target.crouching
 
-                #debugging
-                """print(
-                    f"ATK: {self.attack_type} | "
-                    f"Block:{target.block} WalkBack:{target.walking_back} Crouch:{target.crouching} "
-                    f"=> CanBlock:{can_block}"
-                )"""
+                    elif self.attack_type == "standing_light":
+                        can_block = True
 
-                can_block = (current_block == required_block)
-
-                if self.attack_type == "standing_light":
-                    can_block = (current_block in ["high", "low"])
+                    elif self.attack_type in ["crouching_light", "crouching_heavy"]:
+                        can_block = target.crouching
                 
-                if target.block_type == required_block:
-                    can_block = True
-
                 if can_block:
-                    target.block_type = required_block
-                    self.attack_landed = False 
-                    block = self.attack_data["on_block"]
-                    target_block = self.attack_data["on_target_block"]
-                    target.hit = False
+                    self.attack_landed = True
+                    block_data = self.attack_data["on_block"]
+                    t_block_data = self.attack_data["on_target_block"]
 
-                    target.apply_knockback(block["knockback"], self.flip)
-                    target.stun_on_block(block["stun"])
+                    target.apply_knockback(block_data["knockback"], self.flip)
+                    target.stun_on_block(block_data["stun"])
+                    self.on_target_block(t_block_data["stun"])
+                    self.apply_knockback(t_block_data["knockback"], not self.flip)
 
-                    self.on_target_block(target_block["stun"])
-                    self.apply_knockback(target_block["knockback"], not self.flip)
+                    self.sounds["block"].play()
+                    self.sound_played = True
 
-                    # VFX (Simplified positioning)
-                    x_off = self.vfx_config["block"].get("x_offset", 0) * self.image_scale
-                    y_off = self.vfx_config["block"].get("y_offset", 0) * self.image_scale
+                    # spawn block VFX
+                    v_cfg = self.vfx_config.get("block", {})
+                    x_off = v_cfg.get("x_offset", 0) * self.image_scale
+                    y_off = v_cfg.get("y_offset", 0) * self.image_scale
                     vfx_x = target.rect.left + x_off if not self.flip else target.rect.right - x_off
                     vfx_group.add(VFX(vfx_x, target.rect.centery - y_off, self.vfx_animations["block"], speed=4, flip=not self.flip))
-               
                 else:
-                    self.attack_landed = True 
-                    hit = self.attack_data["on_hit"]
-                    target.hit = True
-                    target.hurt_timer = hit["stun"]
-                    target.health -= hit["damage"]
-                    target.apply_knockback(hit["knockback"], self.flip)
-                    target.stun_on_hit(hit["stun"])
+                    self.attack_landed = True
+                    hit_data = self.attack_data["on_hit"]
+                    target.hurt_timer = hit_data["stun"]
+                    target.health -= hit_data["damage"]
+                    target.apply_knockback(hit_data["knockback"], self.flip)
+                    target.stun_on_hit(hit_data["stun"])
 
-        # attack reset
-        elif self.attack_timer > startup + active + recovery:
+            # attack reset  
+        if self.attack_timer >= total_duration:
             self.attacking = False
             self.attack_timer = 0
             self.attack_landed = False
             self.attack_cooldown = recovery
-            target.is_blocking = False
-            target.block_type = None
+
 
     def start_attack(self, attack_type):
         if self.attacking:
             gatling = self.attack_data.get("gatling", [])
-
             if self.attack_landed and attack_type in gatling: #hit confirm
                 self.attack_values(attack_type)
             return
@@ -454,42 +404,29 @@ class Fighter():
             self.action = new_action
             self.frame_index = 0
             self.anim_counter = 0
+            self.sound_played = False
 
     def draw(self, surface):
         img = pygame.transform.flip(self.image, self.flip, False)
-        # debug
-        # pygame.draw.rect(surface, (255, 0, 0), self.rect)
-        # draw sora
-        surface.blit(
-            img,
-            (
-                self.rect.x - (self.offset[0] * self.image_scale),
-                self.rect.y - (self.offset[1] * self.image_scale)
-            )
-        )
+        draw_x = self.rect.x - (self.offset[0] * self.image_scale)
+        draw_y = self.rect.y - (self.offset[1] * self.image_scale)
+        surface.blit(img, (draw_x, draw_y))
 
         # vfx handling
         if self.attacking:
             # diabolical vfx_anim fetch without needing funky coding
             vfx_name = f"{self.attack_type}_vfx"
-
             if vfx_name in self.vfx_animations:
                 vfx_list = self.vfx_animations[vfx_name]
                 # Out of Index Error Handling
                 vfx_frame_idx = min(self.frame_index, len(vfx_list) - 1)
-                vfx_img = vfx_list[vfx_frame_idx]
-                # flip for p2
-                vfx_img = pygame.transform.flip(vfx_img, self.flip, False)
+                vfx_img = pygame.transform.flip(vfx_list[vfx_frame_idx], self.flip, False)
                 x_offset = self.vfx_config[vfx_name].get("x_offset", 0)
                 y_offset = self.vfx_config[vfx_name].get("y_offset", 0)
 
-                if self.flip:
-                    x_offset = -x_offset
-                
-                draw_x = self.rect.x - (self.offset[0] * self.image_scale) + (x_offset * self.image_scale)
-                draw_y = self.rect.y - (self.offset[1] * self.image_scale) + (y_offset * self.image_scale)
+                if self.flip: x_offset = -x_offset
 
-                surface.blit(vfx_img, (draw_x, draw_y))
+                surface.blit(vfx_img, (draw_x + (x_offset * self.image_scale), draw_y + (y_offset * self.image_scale)))
 
 class VFX(pygame.sprite.Sprite):
     def __init__(self, x, y, anim_list, speed=4, flip=False):
@@ -500,11 +437,11 @@ class VFX(pygame.sprite.Sprite):
         self.speed = speed
         self.counter = 0
         
-        img = self.frames[self.frame_index]
-        self.image = pygame.transform.flip(img, self.flip, False)
+        self.image = pygame.transform.flip(self.frames[self.frame_index], self.flip, False)
         self.rect = self.image.get_rect(center=(x,y))
 
     def update(self):
+
         # update animation
         self.counter += 1
         if self.counter >= self.speed:
@@ -515,5 +452,4 @@ class VFX(pygame.sprite.Sprite):
             if self.frame_index >= len(self.frames):
                 self.kill() 
             else:
-                img = self.frames[self.frame_index]
-                self.image = pygame.transform.flip(img, self.flip, False)
+                self.image = pygame.transform.flip(self.frames[self.frame_index], self.flip, False)
