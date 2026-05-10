@@ -241,7 +241,7 @@ def draw_health_bar(health, x, y):
     pygame.draw.rect(screen, RED, (x, y, 400, 30))
     pygame.draw.rect(screen, YELLOW, (x, y, 400 * ratio, 30))
 
-fighter_1 = Fighter(1, 200, 310, False, player1_data, player1_sheet, player_animation_steps, vfx_sheet, vfx_animation_steps) #note that fighter class is 155 wide and 260 tall so +-155 on the x position
+fighter_1 = Fighter(1, 200, 310, False, player1_data, player1_sheet, player_animation_steps, vfx_sheet, vfx_animation_steps)
 fighter_2 = Fighter(2, 700, 310, True, player2_data, player2_sheet, player2_animation_steps, vfx_sheet, vfx_animation_steps)
 
 vfx_group = pygame.sprite.Group()    
