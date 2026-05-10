@@ -53,6 +53,23 @@ player1_win = pygame.image.load("assets/image/player1 WINS.png")
 player2_win = pygame.image.load("assets/image/player2 WINS.png")
 resume_img = pygame.image.load("assets/image/play_button.png").convert_alpha()
 
+#load sounds
+pygame.mixer.music.load("assets/sound/Kingdom Hearts 1.5 OST Destiny Islands Battle Theme ( Bustin' Up on the Beach ).mp3")
+pygame.mixer.music.set_volume(0.20)
+pygame.mixer.music.play(-1, 0.0, 5000)
+standing_light_sfx = pygame.mixer.Sound("assets/sound/attack/light attack/se02001#18.wav")
+standing_light_sfx.set_volume(0.5)
+standing_heavy_sfx = pygame.mixer.Sound("assets/sound/attack/heavy attack/se02001#07.wav")
+standing_heavy_sfx.set_volume(0.5)
+crouching_light_sfx = pygame.mixer.Sound("assets/sound/attack/light attack/se02001#19.wav")
+crouching_light_sfx.set_volume(0.5)
+crouching_heavy_sfx = pygame.mixer.Sound("assets/sound/attack/heavy attack/se02001#04.wav")
+crouching_heavy_sfx.set_volume(0.5)
+hurt_sfx = pygame.mixer.Sound("assets/sound/hurt/Battle-Sora#028.wav")
+hurt_sfx.set_volume(0.5)
+victory_sfx = pygame.mixer.Sound("assets/sound/victory/fd_po_chat_sora_random6_000.wav")
+victory_sfx.set_volume(0.5)
+
 #create button instance
 resume_button = Button(0, 0, resume_img, 1)
 
