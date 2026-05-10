@@ -1,6 +1,7 @@
 import pygame
 from fighter import Fighter
 from button import Button
+from pygame import mixer
 
 pygame.init()
 
