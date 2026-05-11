@@ -3,6 +3,7 @@ from fighter import Fighter
 from button import Button
 
 pygame.init()
+pygame.mixer.init()
 
 SCREEN_WIDTH=1080
 SCREEN_HEIGHT=620
@@ -149,7 +150,7 @@ player_animation_steps = { # lower speed value = faster, higher speed value = sl
             "height_multiplier": 1, 
         },
         "on_hit": {
-            "damage": 30,
+            "damage": 40,
             "stun": 18,
             "knockback": 100,
         },
@@ -212,14 +213,14 @@ text = pygame.font.SysFont("Wide Latin", 31) #text font and size
 count_text = pygame.font.SysFont("Wide Latin", 100) #counter text
 crown_img = pygame.image.load("assets/image/round_crown.png").convert_alpha()
 play_img = pygame.image.load("assets/image/play_button.png")
-back_img = pygame.image.load("assets/image/back_button.png")
+back_img = pygame.image.load("assets/image/back_help.png")
 help_button_img = pygame.image.load("assets/image/help_button.png")
 help_img = pygame.image.load("assets/image/help.png")
 quit_img = pygame.image.load("assets/image/quit_button.png")
 leave_img = pygame.image.load("assets/image/leave_button.png")
 resume_img = pygame.image.load("assets/image/resume_button.png")
 rematch_img = pygame.image.load("assets/image/rematch_button.png")
-# i_love_snake_case
+
 
 play_button = Button(0, 0, play_img, 1, hitbox=(350, 110, 380, 80))
 back_button = Button(0, 0, back_img, 1, hitbox = (0, 0, 100, 80))
@@ -236,19 +237,19 @@ crouching_light_sfx = pygame.mixer.Sound("assets/sound/attack/light attack/se020
 crouching_heavy_sfx = pygame.mixer.Sound("assets/sound/attack/heavy attack/se02001#04.wav")
 hurt_sfx = pygame.mixer.Sound("assets/sound/hurt/Battle-Sora#028.wav")
 victory_sfx = pygame.mixer.Sound("assets/sound/victory/fd_po_chat_sora_random6_000.wav")
-light_hit_sfx = pygame.mixer.Sound("assets/sound/hit collide/se02001#11.wav")
-heavy_hit_sfx = pygame.mixer.Sound("assets/sound/hit collide/se02001#15.wav")
+light_hit_sfx = pygame.mixer.Sound("assets/sound/attack/hit collide/se02001#11.wav")
+heavy_hit_sfx = pygame.mixer.Sound("assets/sound/attack/hit collide/se02001#15.wav")
 block_sfx = pygame.mixer.Sound("assets/sound/block/se00001_032.wav")
 
 pygame.mixer.music.set_volume(0.20)
-standing_light_sfx.set_volume(0.5)
-standing_heavy_sfx.set_volume(0.5)
-crouching_light_sfx.set_volume(0.5)
-crouching_heavy_sfx.set_volume(0.5)
+standing_light_sfx.set_volume(0.4)
+standing_heavy_sfx.set_volume(0.4)
+crouching_light_sfx.set_volume(0.4)
+crouching_heavy_sfx.set_volume(0.4)
 hurt_sfx.set_volume(0.5)
 victory_sfx.set_volume(0.5)
-light_hit_sfx.set_volume(0.5)
-heavy_hit_sfx.set_volume(0.5)
+light_hit_sfx.set_volume(0.4)
+heavy_hit_sfx.set_volume(0.4)
 block_sfx.set_volume(0.199)
 
 sounds = {
@@ -270,7 +271,7 @@ player1_win = pygame.image.load("assets/image/player1 WINS.png")
 player2_win = pygame.image.load("assets/image/player2 WINS.png")
 
 def draw_menu(surface):
-    title = menu_font.render("COAST PYTER", True, WHITE)
+    title = menu_font.render("COAST  PYTER", True, WHITE)
     surface.blit(title, (130, 20))
 
 def draw_pause(surface):
@@ -307,10 +308,10 @@ def draw_countdown(surface, count):
 
 def draw_crowns(surface, score_p1, score_p2):
     scaled_crown = pygame.transform.scale(crown_img, (130, 100))
-    if score_p1 >= 1: surface.blit(scaled_crown, (270, 20))
-    if score_p1 == 2: surface.blit(scaled_crown, (330, 20))
-    if score_p2 >= 1: surface.blit(scaled_crown, (620, 20))
-    if score_p2 == 2: surface.blit(scaled_crown, (670, 20))
+    if score_p1 >= 1: surface.blit(scaled_crown, (270, 22))
+    if score_p1 == 2: surface.blit(scaled_crown, (330, 22))
+    if score_p2 >= 1: surface.blit(scaled_crown, (680, 22)) 
+    if score_p2 == 2: surface.blit(scaled_crown, (620, 22))
 
 def draw_health_bar(surface, health, x, y):
     ratio = max(health / 100.0, 0) # Prevent negative health bars
@@ -325,10 +326,10 @@ def draw_victory(surface, player_num):
 def draw_streaks(surface):
     if streak[0] > 0:
         p1_streak_txt = text.render(f"Wins: {streak[0]}", True, WHITE)
-        surface.blit(p1_streak_txt, (25, 90))
+        surface.blit(p1_streak_txt, (25, 570))
     if streak[1] > 0:
         p2_streak_txt = text.render(f"Wins: {streak[1]}", True, WHITE)
-        surface.blit(p2_streak_txt, (865, 90))
+        surface.blit(p2_streak_txt, (865, 570))
 
 
 def reset_round():
@@ -382,7 +383,7 @@ while run:
             into_count = 3
             pygame.mixer.music.stop()
             pygame.mixer.music.unload()
-            pygame.mixer.music.load("assets\sound\Kingdom Hearts 1.5 OST Destiny Islands Battle Theme ( Bustin' Up on the Beach ).mp3")
+            pygame.mixer.music.load("assets/sound/Kingdom Hearts 1.5 OST Destiny Islands Battle Theme ( Bustin' Up on the Beach ).mp3")
             pygame.mixer.music.play(-1, 0.0, 5000)
             GAME_STATE = STATE_RUN
 
@@ -483,7 +484,7 @@ while run:
             if leave_button.draw(screen):
                 pygame.mixer.music.stop()
                 pygame.mixer.music.unload()
-                pygame.mixer.music.load("assets\sound\Cavern of Remembrance.mp3")
+                pygame.mixer.music.load("assets/sound/Cavern of Remembrance.mp3")
                 pygame.mixer.music.play(-1, 0.0, 5000)
                 GAME_STATE = STATE_MENU
                 click_cooldown = 20
@@ -507,12 +508,12 @@ while run:
             round_over = False
             pygame.mixer.music.stop()
             pygame.mixer.music.unload()
-            pygame.mixer.music.load("assets\sound\Kingdom Hearts 1.5 OST Destiny Islands Battle Theme ( Bustin' Up on the Beach ).mp3")
+            pygame.mixer.music.load("assets/sound/Kingdom Hearts 1.5 OST Destiny Islands Battle Theme ( Bustin' Up on the Beach ).mp3")
             pygame.mixer.music.play(-1, 0.0, 5000)
             GAME_STATE = STATE_RUN
 
         if leave_button.draw(screen):
-            pygame.mixer.music.load("assets\sound\Cavern of Remembrance.mp3")
+            pygame.mixer.music.load("assets/sound/Cavern of Remembrance.mp3")
             pygame.mixer.music.play(-1, 0.0, 5000)
             GAME_STATE = STATE_MENU
             click_cooldown = 20
